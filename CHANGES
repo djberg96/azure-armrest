@@ -1,3 +1,6 @@
+= 0.2.9 - 25-Aug-2016
+* Backported PR #211 (exception class updates and specs).
+
 = 0.2.8 - 22-Jul-2016
 * Backported PR #188 (add list_all_private_images method).
 * Backported PR #194 (updated .travis.yml).
