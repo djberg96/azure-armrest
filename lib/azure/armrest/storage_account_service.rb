@@ -261,7 +261,13 @@ module Azure
 
         storage_accounts.each do |lstorage_account|
           threads << Thread.new(lstorage_account) do |storage_account|
-            key = get_account_key(storage_account)
+            begin
+              key = get_account_key(storage_account)
+            rescue Azure::Armrest::ApiException => err
+              # Most likely because the storage account isn't completely provisioned
+              # yet or provisioning of the account was not successful
+              next
+            end
 
             storage_account.all_blobs(key).each do |blob|
               next unless File.extname(blob.name).casecmp('.vhd') == 0
