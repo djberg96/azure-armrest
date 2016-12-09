@@ -35,7 +35,7 @@ module Azure
       attr_accessor :tenant_id
 
       # The subscription ID used for each http request.
-      attr_accessor :subscription_id
+      attr_reader :subscription_id
 
       # The resource group used for http requests.
       attr_accessor :resource_group
@@ -50,7 +50,7 @@ module Azure
       attr_accessor :accept
 
       # Proxy to be used for all http requests.
-      attr_accessor :proxy
+      attr_reader :proxy
 
       # SSL version to be used for all http requests.
       attr_accessor :ssl_version
@@ -65,8 +65,8 @@ module Azure
       attr_accessor :max_threads
 
       # Yields a new Azure::Armrest::Configuration objects. Note that you must
-      # specify a client_id, client_key, tenant_id and subscription_id. All other
-      # parameters are optional.
+      # specify a client_id, client_key, tenant_id. The subscription_id is optional
+      # but should be specified in most cases. All other parameters are optional.
       #
       # Example:
       #
@@ -84,9 +84,8 @@ module Azure
       # Although you can specify an :api_version, it is typically overridden
       # by individual service classes.
       #
-      # Note that while the constructor will fail if invalid credentials are
-      # supplied, it does not validate your subscription ID. If you want to
-      # validate your subscription ID as well, use the validate_subscription! method.
+      # The constructor will also validate that the subscription ID is valid
+      # if present.
       #
       def initialize(args)
         # Use defaults, and override with provided arguments
@@ -106,29 +105,44 @@ module Azure
         user_token = options.delete(:token)
         user_token_expiration = options.delete(:token_expiration)
 
-        options.each { |key, value| send("#{key}=", value) }
+        # We need to ensure these are set before subscription_id=
+        @tenant_id = options.delete(:tenant_id)
+        @client_id = options.delete(:client_id)
+        @client_key = options.delete(:client_key)
 
-        unless client_id && client_key && tenant_id && subscription_id
-          raise ArgumentError, "client_id, client_key, tenant_id and subscription_id must all be specified"
+        unless client_id && client_key && tenant_id
+          raise ArgumentError, "client_id, client_key, and tenant_id must all be specified"
         end
 
-        # Allows for URI objects or Strings.
-        @proxy = @proxy.to_s if @proxy
-
-        validate_subscription
+        # Then set the remaining options automatically
+        options.each { |key, value| send("#{key}=", value) }
 
         if user_token && user_token_expiration
           set_token(user_token, user_token_expiration)
         elsif user_token || user_token_expiration
           raise ArgumentError, "token and token_expiration must be both specified"
         end
-
-        @providers = fetch_providers
-        set_provider_api_versions
       end
 
       def hash
         [tenant_id, client_id, client_key].join('_').hash
+      end
+
+      # Allow for strings or URI objects when assigning a proxy.
+      #
+      def proxy=(value)
+        @proxy = value ? value.to_s : value
+      end
+
+      # Set the subscription ID, and validate the value. This also sets
+      # provider information.
+      #
+      def subscription_id=(value)
+        @subscription_id = value
+        validate_subscription
+        @providers = fetch_providers
+        set_provider_api_versions
+        value
       end
 
       def eql?(other)
@@ -186,9 +200,16 @@ module Azure
         RestClient.log = output
       end
 
+      # Returns a list of subscriptions for the current configuration object.
+      #
+      def subscriptions
+        Azure::Armrest::SubscriptionService.new(self).list
+      end
+
       private
 
-      # Validate the subscription ID for the given credentials.
+      # Validate the subscription ID for the given credentials. Returns the
+      # subscription ID if valid.
       #
       # If the subscription ID that was provided in the constructor cannot
       # be found within the list of valid subscriptions, then an error is
@@ -198,36 +219,15 @@ module Azure
       # then a warning will be issued, but no error will be raised.
       #
       def validate_subscription
-        url = File.join(Azure::Armrest::RESOURCE, 'subscriptions') + "?api-version=#{api_version}"
-
-        options = {
-          :url         => url,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify,
-          :headers     => {
-            :accept        => accept,
-            :content_type  => content_type,
-            :authorization => token
-          }
-        }
-
-        response = Azure::Armrest::ArmrestService.send(:rest_get, options)
-        json = JSON.parse(response.body)['value']
-
-        subscriptions = json.map { |hash| [hash['subscriptionId'], hash['state']] }
-
-        found = subscriptions.find { |array| array.first == subscription_id }
+        found = subscriptions.find { |sub| sub.subscription_id == subscription_id }
 
         unless found
           raise ArgumentError, "Subscription ID '#{subscription_id}' not found"
         end
 
-        if found.last.casecmp("enabled") != 0
-          warn "Subscription '#{found.first}' found but not enabled."
+        if found.state.casecmp('enabled') != 0
+          warn "Subscription '#{found.subscription_id}' found but not enabled."
         end
-
-        true
       end
 
       def ensure_token

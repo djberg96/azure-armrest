@@ -70,8 +70,13 @@ def setup_params
     Azure::Armrest::VirtualMachineSize.new(series2)
   ]
 
+  @subscriptions = [
+    Azure::Armrest::Subscription.new(:subscription_id => @sub, :state => 'Enabled')
+  ]
+
   allow_any_instance_of(Azure::Armrest::Configuration).to receive(:fetch_providers).and_return(@providers_response)
-  allow_any_instance_of(Azure::Armrest::Configuration).to receive(:validate_subscription).and_return(true)
+  allow_any_instance_of(Azure::Armrest::Configuration).to receive(:fetch_subscriptions).and_return(@subscriptions)
+  allow_any_instance_of(Azure::Armrest::Configuration).to receive(:validate_subscription).and_return(@sub)
 
   @conf = Azure::Armrest::Configuration.new(
     :subscription_id  => @sub,

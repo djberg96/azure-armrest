@@ -41,9 +41,9 @@ describe Azure::Armrest::Configuration do
       expect { described_class.new(options) }.to raise_error(ArgumentError)
     end
 
-    it 'requires a subscription_id' do
+    it 'does not require a subscription_id' do
       options.delete(:subscription_id)
-      expect { described_class.new(options) }.to raise_error(ArgumentError)
+      expect { described_class.new(options) }.to_not raise_error(ArgumentError)
     end
 
     it 'requires token and token_expiration together' do
@@ -56,6 +56,16 @@ describe Azure::Armrest::Configuration do
   end
 
   context 'instances' do
+    context 'regular methods' do
+      it 'defines a subscription_id= method' do
+        expect(subject).to respond_to(:subscription_id=)
+      end
+
+      it 'defines a subscriptions method' do
+        expect(subject).to respond_to(:subscriptions)
+      end
+    end
+
     context 'accessors' do
       it 'defines an api_version accessor' do
         expect(subject.api_version).to eql('2015-01-01')
@@ -106,6 +116,7 @@ describe Azure::Armrest::Configuration do
       end
 
       it 'defines a subscription_id accessor' do
+        allow(subject).to receive(:validate_subscription).and_return(true)
         expect(subject.subscription_id).to eql(options[:subscription_id])
         subject.subscription_id = 'new_id'
         expect(subject.subscription_id).to eql('new_id')

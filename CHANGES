@@ -1,3 +1,18 @@
+= 0.4.0 - 8-Dec-2016
+* The Configuration constructor no longer requires a subscription ID. However,
+  the presence of a subscription ID is still required for almost all Service
+  classes. The verification now happens later, within the Service constructor.
+* Added the SubscriptionService class. This does not require a subscription ID
+  in advance, so you can get a list of subscriptions for a tenant.
+* The Configuration#subscription_id= and Configuration#proxy= writer methods
+  now have custom implementations.
+
+= 0.3.13 - 30-Nov-2016
+* Fixed the Billing::Usage model class name.
+* Updated the Billing::Usage#list method so that it returns an ArmrestCollection
+  instead of a plain array. In addition, it now supports an :all option so
+  that you don't have to deal with continuation tokens.
+
 = 0.3.12 - 15-Nov-2016
 * Added the Insights::DiagnosticService class.
 * Added the get_from_vm and get_os_disk methods to StorageAccountService.
