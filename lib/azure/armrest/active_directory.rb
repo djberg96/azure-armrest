@@ -12,7 +12,7 @@ module Azure
       # string. The api-version option is automatically appended.
       #
       def build_url(object_id = nil, links = false, property = nil, filter = {})
-        url = File.join(Azure::Armrest::GRAPH, configuration.tenant_id, service_name)
+        url = File.join(Azure::Armrest::GRAPH_RESOURCE, configuration.tenant_id, service_name)
         url = File.join(url, object_id) if object_id
 
         if property

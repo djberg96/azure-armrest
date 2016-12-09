@@ -20,8 +20,11 @@ module Azure
     # A common URI for all subclasses
     COMMON_URI = RESOURCE + "subscriptions/"
 
+    # The resource for the Graph API
+    GRAPH_AUTHORITY = "https://login.microsoftonline.com/"
+
     # Resource for Active Directory API
-    GRAPH = "https://graph.windows.net"
+    GRAPH_RESOURCE = "https://graph.windows.net/"
   end
 end
 
@@ -62,6 +65,7 @@ require 'azure/armrest/sql/sql_server_service'
 require 'azure/armrest/sql/sql_database_service'
 require 'azure/armrest/billing/usage_service'
 require 'azure/armrest/active_directory'
+require 'azure/armrest/active_directory/configuration'
 require 'azure/armrest/active_directory/user_service'
 
 # JSON wrapper classes. The service classes should require their own

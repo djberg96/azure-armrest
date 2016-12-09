@@ -274,11 +274,17 @@ module Azure
         Azure::Armrest::ResourceProviderService.new(self).list
       end
 
-      def fetch_graph_token
-      end
-
       def fetch_token
+        puts "fetch_token Configuration"
         token_url = File.join(Azure::Armrest::AUTHORITY, tenant_id, 'oauth2/token')
+        get_token(token_url, Azure::Armrest::RESOURCE)
+      end
+      
+      def get_token(token_url, resource)
+        p token_url
+        p resource
+        p client_id
+        p client_key
 
         response = JSON.parse(
           ArmrestService.send(
@@ -291,7 +297,7 @@ module Azure
               :grant_type    => grant_type,
               :client_id     => client_id,
               :client_secret => client_key,
-              :resource      => Azure::Armrest::RESOURCE
+              :resource      => resource
             }
           )
         )

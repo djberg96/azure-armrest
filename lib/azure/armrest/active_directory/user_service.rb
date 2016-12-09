@@ -10,12 +10,12 @@ module Azure
           @service_name = 'users'
         end
 
-        def get_user(user, filter=nil)
-          url = File.join(graph_url, 'users', user) + api_version_string
+        def get_user(user, links = false, property = nil, filter={})
+          url = build_url(user, links, property, filter)
         end
 
-        def users(filter=nil)
-          url = File.join(graph_url, 'users') + api_version_string
+        def users(links = false, property = nil, filter={})
+          url = build_url(nil, links, property, filter)
           response = rest_get(url)
           Azure::Armrest::ArmrestCollection.create_from_response(response, Azure::Armrest::ActiveDirectory::User)
         end
