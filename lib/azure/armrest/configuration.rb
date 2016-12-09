@@ -274,6 +274,9 @@ module Azure
         Azure::Armrest::ResourceProviderService.new(self).list
       end
 
+      def fetch_graph_token
+      end
+
       def fetch_token
         token_url = File.join(Azure::Armrest::AUTHORITY, tenant_id, 'oauth2/token')
 

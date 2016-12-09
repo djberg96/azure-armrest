@@ -60,7 +60,8 @@ require 'azure/armrest/role/definition_service'
 require 'azure/armrest/sql/sql_server_service'
 require 'azure/armrest/sql/sql_database_service'
 require 'azure/armrest/billing/usage_service'
-require 'azure/armrest/active_directory_service'
+require 'azure/armrest/active_directory'
+require 'azure/armrest/active_directory/user_service'
 
 # JSON wrapper classes. The service classes should require their own
 # wrappers from this point on.
