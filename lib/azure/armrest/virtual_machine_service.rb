@@ -166,6 +166,46 @@ module Azure
         end
       end
 
+      # Clone an existing unmanaged VM. Here the +vm+ argument can be either a
+      # VirtualMachine object or a string.
+      #
+      def clone(vm, resource_group, options = {})
+        vm = vm.is_a?(String) ? get(vm, resource_group) : vm
+
+        if vm.managed_disk?
+          raise "The clone method is only valid for unmanaged disks."
+        end
+
+        current_vhd = vm.properties.storage_profile.os_disk.vhd.uri
+        uri = Addressable::URI.parse(current_vhd)
+        storage_acct_name = uri.host.split('.').first
+
+        sas = Azure::Armrest::StorageAccountService.new(configuration)
+        storage_account = sas.list_all.find { |s| s.name == storage_acct_name }
+
+        if storage_account.nil?
+          raise "Unable to find storage account for #{vm.name}"
+        end
+
+        keys = sas.list_account_keys(storage_account.name, storage_account.resource_group)
+        key  = keys['key1'] || keys['key2']
+
+        source_blob = storage_account.all_blobs(key).find { |b| b.name == File.basename(current_vhd) }
+        dest_blob   = File.basename(source_blob, '.vhd') + '_clone.vhd'
+
+        copy = storage_account.copy_blob(
+          source_blob.container,
+          source_blob.name,
+          source_blob.container,
+          dest_blob,
+          key
+        )
+
+        wait(copy.response_headers)
+
+        create(options[:name], vm.resource_group, options)
+      end
+
       def model_class
         VirtualMachineModel
       end
