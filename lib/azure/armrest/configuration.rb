@@ -1,28 +1,6 @@
 module Azure
   module Armrest
     class Configuration
-      # Clear all class level caches. Typically used for testing only.
-      def self.clear_caches
-        token_cache.clear
-      end
-
-      # Used to store unique token information.
-      def self.token_cache
-        @token_cache ||= Hash.new { |h, k| h[k] = [] }
-      end
-
-      # Retrieve the cached token for a configuration.
-      # Return both the token and its expiration date, or nil if not cached
-      def self.retrieve_token(configuration)
-        token_cache[configuration.hash]
-      end
-
-      # Cache the token for a configuration that a token has been fetched from Azure
-      def self.cache_token(configuration)
-        raise ArgumentError, "Configuration does not have a token" if configuration.token.nil?
-        token_cache[configuration.hash] = [configuration.token, configuration.token_expiration]
-      end
-
       # The api-version string
       attr_accessor :api_version
 
@@ -44,12 +22,6 @@ module Azure
       # The grant type. The default is client_credentials.
       attr_accessor :grant_type
 
-      # The content type specified for http requests. The default is 'application/json'
-      attr_accessor :content_type
-
-      # The accept type specified for http request results. The default is 'application/json'
-      attr_accessor :accept
-
       # Proxy to be used for all http requests.
       attr_reader :proxy
 
@@ -68,6 +40,9 @@ module Azure
       # The environment object which determines various endpoint URL's. The
       # default is Azure::Armrest::Environment::Public.
       attr_accessor :environment
+
+      attr_accessor :connection_options
+      attr_accessor :ssl_options
 
       # Yields a new Azure::Armrest::Configuration objects. Note that you must
       # specify a client_id, client_key, tenant_id. The subscription_id is optional
@@ -95,25 +70,26 @@ module Azure
       def initialize(args)
         # Use defaults, and override with provided arguments
         options = {
-          :api_version   => '2015-01-01',
-          :accept        => 'application/json',
-          :content_type  => 'application/json',
-          :grant_type    => 'client_credentials',
-          :proxy         => ENV['http_proxy'],
-          :ssl_version   => 'TLSv1',
-          :max_threads   => 10,
-          :environment   => Azure::Armrest::Environment::Public
+          :api_version => '2017-05-10',
+          :grant_type  => 'client_credentials',
+          :max_threads => 10,
+          :environment => Azure::Armrest::Environment::Public,
+          :ssl_options => {
+            :ssl_version => 'TLSv1',
+          },
+          :connection_options => {
+            :proxy => ENV['http_proxy'],
+          }
         }.merge(args.symbolize_keys)
 
         # Avoid thread safety issues for VCR testing.
         options[:max_threads] = 1 if defined?(VCR)
 
-        user_token = options.delete(:token)
-        user_token_expiration = options.delete(:token_expiration)
+        @token = options.delete(:token)
 
         # We need to ensure these are set before subscription_id=
-        @tenant_id = options.delete(:tenant_id)
-        @client_id = options.delete(:client_id)
+        @tenant_id  = options.delete(:tenant_id)
+        @client_id  = options.delete(:client_id)
         @client_key = options.delete(:client_key)
 
         unless client_id && client_key && tenant_id
@@ -122,16 +98,6 @@ module Azure
 
         # Then set the remaining options automatically
         options.each { |key, value| send("#{key}=", value) }
-
-        if user_token && user_token_expiration
-          set_token(user_token, user_token_expiration)
-        elsif user_token || user_token_expiration
-          raise ArgumentError, "token and token_expiration must be both specified"
-        end
-      end
-
-      def hash
-        [environment.name, tenant_id, client_id, client_key].join('_').hash
       end
 
       # Allow for strings or URI objects when assigning a proxy.
@@ -158,28 +124,17 @@ module Azure
         tenant_id == other.tenant_id && client_id == other.client_id && client_key == other.client_key
       end
 
-      # Returns the token for the current cache key, or sets it if it does not
-      # exist or it has expired.
+      # Returns the token for the current configuration object.
       #
       def token
         ensure_token
         @token
       end
 
-      # Set the token value and expiration time.
-      #
-      def set_token(token, token_expiration)
-        validate_token_time(token_expiration)
-
-        @token, @token_expiration = token, token_expiration.utc
-        self.class.cache_token(self)
-      end
-
-      # Returns the expiration datetime of the current token
-      #
-      def token_expiration
-        ensure_token
-        @token_expiration
+      # 
+      def token=(token_object)
+        validate_token_time(token_object) 
+        @token = token_object
       end
 
       # Return the default api version for the given provider and service
@@ -195,7 +150,7 @@ module Azure
       # file path, file handler, or already a logger instance.
       #
       def self.log
-        RestClient.log
+        OAuth2.logger
       end
 
       # Sets the log to +output+, which can be a file, a file handle, or
@@ -203,7 +158,7 @@ module Azure
       #
       def self.log=(output)
         output = Logger.new(output) unless output.kind_of?(Logger)
-        RestClient.log = output
+        OAuth2.logger = output
       end
 
       # Returns a list of subscriptions for the current configuration object.
@@ -237,15 +192,14 @@ module Azure
       end
 
       def ensure_token
-        @token, @token_expiration = self.class.retrieve_token(self) if @token.nil?
-        fetch_token if @token.nil? || Time.now.utc > @token_expiration
+        fetch_token if @token.nil? || Time.now.utc > Time.at(@token.expires_at)
       end
 
       # Don't allow tokens from the past to be set.
       #
-      def validate_token_time(time)
-        if time.utc < Time.now.utc
-          raise ArgumentError, 'token_expiration date invalid'
+      def validate_token_time(token)
+        if Time.at(token.expires_at).utc < Time.now.utc
+          raise ArgumentError, 'token expires_at date invalid'
         end
       end
 
@@ -281,28 +235,21 @@ module Azure
       end
 
       def fetch_token
-        token_url = File.join(environment.authority_url, tenant_id, 'oauth2', 'token')
+        site_url  = environment.active_directory_authority
+        token_url = File.join(tenant_id, 'oauth2', 'token')
+        auth_url  = File.join(site_url, token_url)
 
-        response = JSON.parse(
-          ArmrestService.send(
-            :rest_post,
-            :url         => token_url,
-            :proxy       => proxy,
-            :ssl_version => ssl_version,
-            :ssl_verify  => ssl_verify,
-            :payload     => {
-              :grant_type    => grant_type,
-              :client_id     => client_id,
-              :client_secret => client_key,
-              :resource      => environment.resource_url
-            }
-          )
+        client = OAuth2::Client.new(
+          client_id,
+          client_key,
+          :site            => site_url,
+          :authorize_url   => auth_url,
+          :token_url       => token_url,
+          :ssl             => ssl_options,
+          :connection_opts => connection_options
         )
 
-        @token = 'Bearer ' + response['access_token']
-        @token_expiration = Time.now.utc + response['expires_in'].to_i
-
-        self.class.cache_token(self)
+        client.send(self.grant_type).get_token
       end
     end
   end

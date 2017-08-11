@@ -1,3 +1,4 @@
+require 'oauth2'
 require 'rest-client'
 require 'json'
 require 'thread'

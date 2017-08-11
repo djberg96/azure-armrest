@@ -269,6 +269,8 @@ module Azure
       # REST verb methods
 
       def rest_execute(url, body = nil, http_method = :get, encode = true)
+        @token.get(:url)
+=begin
         options = {
           :url         => url,
           :proxy       => configuration.proxy,
@@ -284,6 +286,7 @@ module Azure
         options[:payload] = body if body
 
         self.class.send(:rest_execute, options, http_method, encode)
+=end
       end
 
       def rest_get(url)
