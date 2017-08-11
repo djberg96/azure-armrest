@@ -66,7 +66,7 @@ module Azure
       def list_api_versions(namespace)
         url = build_url(namespace)
         response = rest_get(url)
-        JSON.parse(response)['resourceTypes'].first['apiVersions']
+        JSON.parse(response.body)['resourceTypes'].first['apiVersions']
       end
       memoize :list_api_versions
 
