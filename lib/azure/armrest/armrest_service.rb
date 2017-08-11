@@ -209,7 +209,7 @@ module Azure
           url = encode ? Addressable::URI.encode(options[:url]) : options[:url]
           options = options.merge(:method => http_method, :url => url)
           configuration.token.execute(options).response
-        rescue Exception => e # TODO: find real OAuth2 or Farady exception
+        rescue Faraday::ConnectionFailed => e
           raise_api_exception(e)
         end
 
@@ -270,7 +270,7 @@ module Azure
 
       def rest_execute(url, body = nil, http_method = :get, encode = true)
         url = encode ? Addressable::URI.encode(url) : url
-        configuration.token.send(http_method, url)
+        configuration.token.send(http_method, url).response
       end
 
       def rest_get(url)
@@ -334,13 +334,13 @@ module Azure
       # Make additional calls and concatenate the results if a continuation URL is found.
       def get_all_results(response)
         results  = Azure::Armrest::ArmrestCollection.create_from_response(response, model_class)
-        nextlink = JSON.parse(response)['nextLink']
+        nextlink = JSON.parse(response.body)['nextLink']
 
         while nextlink
           response = rest_get_without_encoding(nextlink)
           more = Azure::Armrest::ArmrestCollection.create_from_response(response, model_class)
           results.concat(more)
-          nextlink = JSON.parse(response)['nextLink']
+          nextlink = JSON.parse(response.body)['nextLink']
         end
 
         results

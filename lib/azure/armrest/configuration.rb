@@ -131,7 +131,8 @@ module Azure
         @token
       end
 
-      # 
+      # Explicitly set a token. The +token_object+ should be an OAuth2 token.
+      #
       def token=(token_object)
         validate_token_time(token_object) 
         @token = token_object

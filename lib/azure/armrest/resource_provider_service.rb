@@ -34,7 +34,7 @@ module Azure
         url = File.join(configuration.environment.resource_url, 'providers')
         url << "?api-version=#{@api_version}"
         response = rest_get(url)
-        resources = JSON.parse(response)['value']
+        resources = JSON.parse(response.body)['value']
 
         resources.map{ |hash| Azure::Armrest::ResourceProvider.new(hash) }
       end
@@ -56,7 +56,7 @@ module Azure
       def list_geo_locations(namespace)
         url = build_url(namespace)
         response = rest_get(url)
-        JSON.parse(response)['resourceTypes'].first['locations']
+        JSON.parse(response.body)['resourceTypes'].first['locations']
       end
       memoize :list_geo_locations
 
