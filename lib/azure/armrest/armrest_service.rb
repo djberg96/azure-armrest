@@ -269,24 +269,7 @@ module Azure
       # REST verb methods
 
       def rest_execute(url, body = nil, http_method = :get, encode = true)
-        @token.get(:url)
-=begin
-        options = {
-          :url         => url,
-          :proxy       => configuration.proxy,
-          :ssl_version => configuration.ssl_version,
-          :ssl_verify  => configuration.ssl_verify,
-          :headers => {
-            :accept        => configuration.accept,
-            :content_type  => configuration.content_type,
-            :authorization => configuration.token
-          }
-        }
-
-        options[:payload] = body if body
-
-        self.class.send(:rest_execute, options, http_method, encode)
-=end
+        configuration.token.send(http_method, url)
       end
 
       def rest_get(url)
