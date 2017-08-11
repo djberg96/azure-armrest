@@ -82,6 +82,8 @@ module Azure
           }
         }.merge(args.symbolize_keys)
 
+        Faraday.default_adapter = :net_http_persistent
+
         # Avoid thread safety issues for VCR testing.
         options[:max_threads] = 1 if defined?(VCR)
 
