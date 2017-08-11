@@ -269,6 +269,7 @@ module Azure
       # REST verb methods
 
       def rest_execute(url, body = nil, http_method = :get, encode = true)
+        url = encode ? Addressable::URI.encode(url) : url
         configuration.token.send(http_method, url)
       end
 
