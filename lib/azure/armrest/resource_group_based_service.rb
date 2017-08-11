@@ -134,7 +134,7 @@ module Azure
           raise ArgumentError, "unable to map service name #{service_name} to model"
         end
 
-        model_class.new(rest_get(url))
+        model_class.new(rest_get(url).body)
       end
 
       alias get_associated_resource get_by_id
