@@ -16,10 +16,10 @@ module Azure
         # response headers and continuation token are set.
         #
         def create_from_response(response, klass = nil)
-          json_response = JSON.parse(response)
+          json_response = JSON.parse(response.body)
           array = new(json_response['value'].map { |hash| klass.new(hash) })
 
-          array.response_code = response.code
+          array.response_code = response.status
           array.response_headers = response.headers
           array.continuation_token = parse_skip_token(json_response)
 
