@@ -75,7 +75,7 @@ module Azure
           :max_threads => 10,
           :environment => Azure::Armrest::Environment::Public,
           :ssl_options => {
-            :ssl_version => 'TLSv1',
+            :version => 'TLSv1',
           },
           :connection_options => {
             :proxy => ENV['http_proxy'],
@@ -84,8 +84,6 @@ module Azure
 
         # Avoid thread safety issues for VCR testing.
         options[:max_threads] = 1 if defined?(VCR)
-
-        @token = options.delete(:token)
 
         # We need to ensure these are set before subscription_id=
         @tenant_id  = options.delete(:tenant_id)
@@ -98,6 +96,8 @@ module Azure
 
         # Then set the remaining options automatically
         options.each { |key, value| send("#{key}=", value) }
+
+        @token = options[:token] || fetch_token
       end
 
       # Allow for strings or URI objects when assigning a proxy.
