@@ -249,7 +249,7 @@ module Azure
           :connection_opts => connection_options
         )
 
-        client.send(self.grant_type).get_token
+        client.send(self.grant_type).get_token(:resource => environment.resource_manager_url)
       end
     end
   end
