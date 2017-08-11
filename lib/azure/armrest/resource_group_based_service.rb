@@ -48,7 +48,7 @@ module Azure
         response = rest_put(url, body)
 
         headers = Azure::Armrest::ResponseHeaders.new(response.headers)
-        headers.response_code = response.code
+        headers.response_code = response.status
 
         if response.body.empty?
           obj = get(name, rgroup)
@@ -160,7 +160,7 @@ module Azure
 
         obj = model_class.new(response.body)
         obj.response_headers = Azure::Armrest::ResponseHeaders.new(response.headers)
-        obj.response_code = response.code
+        obj.response_code = response.status
 
         obj
       end
@@ -214,13 +214,13 @@ module Azure
       def delete_by_url(url, resource_name = '')
         response = rest_delete(url)
 
-        if response.code == 204
+        if response.status == 204
           msg = "resource #{resource_name} not found"
-          raise Azure::Armrest::ResourceNotFoundException.new(response.code, msg, response)
+          raise Azure::Armrest::ResourceNotFoundException.new(response.status, msg, response)
         end
 
         Azure::Armrest::ResponseHeaders.new(response.headers).tap do |headers|
-          headers.response_code = response.code
+          headers.response_code = response.status
         end
       end
 
@@ -264,7 +264,7 @@ module Azure
           response = rest_get(build_url(rg.name))
           json_response = JSON.parse(response.body)['value']
           headers = Azure::Armrest::ResponseHeaders.new(response.headers)
-          code = response.code
+          code = response.status
           results = json_response.map { |hash| model_class.new(hash) }
           mutex.synchronize { array << results } unless results.blank?
         end
