@@ -13,7 +13,7 @@ module Azure
       #
       def list
         url = subscriptions_url + "?api-version=#{api_version}"
-        response = rest_get(url).response
+        response = rest_get(url)
         Azure::Armrest::ArmrestCollection.create_from_response(response, Azure::Armrest::Subscription)
       end
 

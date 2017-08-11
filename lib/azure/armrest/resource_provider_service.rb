@@ -21,7 +21,7 @@ module Azure
       #
       def list
         response = rest_get(build_url)
-        resources = JSON.parse(response)["value"]
+        resources = JSON.parse(response.body)['value']
         resources.map{ |hash| Azure::Armrest::ResourceProvider.new(hash) }
       end
       memoize :list

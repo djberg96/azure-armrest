@@ -208,7 +208,7 @@ module Azure
         def rest_execute(options, http_method = :get, encode = true)
           url = encode ? Addressable::URI.encode(options[:url]) : options[:url]
           options = options.merge(:method => http_method, :url => url)
-          configuration.token.execute(options)
+          configuration.token.execute(options).response
         rescue Exception => e # TODO: find real OAuth2 or Farady exception
           raise_api_exception(e)
         end
