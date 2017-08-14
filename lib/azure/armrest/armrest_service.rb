@@ -209,7 +209,7 @@ module Azure
           url = encode ? Addressable::URI.encode(options[:url]) : options[:url]
           options = options.merge(:method => http_method, :url => url)
           configuration.token.execute(options).response
-        rescue Faraday::ConnectionFailed => e
+        rescue Faraday::Error, OAuth2::Error => e
           raise_api_exception(e)
         end
 
@@ -250,7 +250,7 @@ module Azure
           exception_type = Azure::Armrest::EXCEPTION_MAP[err.http_code]
 
           # If this is an exception that doesn't map directly to an HTTP code
-          # then parse it the exception class name and re-raise it as our own.
+          # then parse the exception class name and re-raise it as our own.
           if exception_type.nil?
             begin
               klass = "Azure::Armrest::" + err.class.to_s.split("::").last + "Exception"
