@@ -5,6 +5,8 @@ require 'nokogiri'
 module Azure
   module Armrest
     class StorageAccount < BaseModel
+      include Azure::Armrest::ServiceHelper
+
       # Classes used to wrap container and blob information.
       class Container < BaseModel; end
       class ContainerProperty < BaseModel; end
@@ -39,6 +41,9 @@ module Azure
 
       # The default access key used when creating a signature for internal http requests.
       attr_accessor :access_key
+
+      # The configuration object from the parent StorageAccountService instance.
+      attr_accessor :configuration
 
       def initialize(json)
         super
@@ -991,21 +996,15 @@ module Azure
         url = File.join(properties.primary_endpoints.table, *args)
 
         headers = build_headers(url, key, 'table')
-        headers['Accept'] = 'application/json;odata=fullmetadata'
+        headers[:accept] = 'application/json;odata=fullmetadata'
+        headers.delete('auth_string')
 
         # Must happen after headers are built
         unless query.nil? || query.empty?
           url << "?#{query}"
         end
 
-        ArmrestService.send(
-          :rest_get,
-          :url         => url,
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify,
-        )
+        rest_get(url, headers)
       end
 
       # Set the headers needed, including the Authorization header.
