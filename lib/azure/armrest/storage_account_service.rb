@@ -13,11 +13,7 @@ module Azure
       # Same as other resource based get methods, but also sets the proxy on the model object.
       #
       def get(name, resource_group = configuration.resource_group)
-        super.tap do |m|
-          m.proxy       = configuration.proxy
-          m.ssl_version = configuration.ssl_version
-          m.ssl_verify  = configuration.ssl_verify
-        end
+        super.tap { |m| m.configuration = configuration }
       end
 
       # Same as other resource based list methods, but also sets the proxy on each model object.
