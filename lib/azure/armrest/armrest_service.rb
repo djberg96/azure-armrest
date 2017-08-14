@@ -203,68 +203,6 @@ module Azure
         status
       end
 
-      class << self
-        private
-
-        def rest_execute(options, http_method = :get, encode = true)
-          url = encode ? Addressable::URI.encode(options[:url]) : options[:url]
-          options = options.merge(:method => http_method, :url => url)
-          configuration.token.execute(options).response
-        rescue Faraday::Error, OAuth2::Error => e
-          raise_api_exception(e)
-        end
-
-        def rest_get(options)
-          rest_execute(options, :get)
-        end
-
-        def rest_post(options)
-          rest_execute(options, :post)
-        end
-
-        def rest_patch(options)
-          rest_execute(options, :patch)
-        end
-
-        def rest_delete(options)
-          rest_execute(options, :delete)
-        end
-
-        def rest_put(options)
-          rest_execute(options, :put)
-        end
-
-        def rest_head(options)
-          rest_execute(options, :head)
-        end
-
-        def raise_api_exception(err)
-          begin
-            response = JSON.parse(err.http_body)
-            code     = response['error']['code']
-            message  = response['error']['message']
-          rescue
-            code = err.try(:http_code) || err.try(:code)
-            message = err.try(:http_body) || err.try(:message)
-          end
-
-          exception_type = Azure::Armrest::EXCEPTION_MAP[err.http_code]
-
-          # If this is an exception that doesn't map directly to an HTTP code
-          # then parse the exception class name and re-raise it as our own.
-          if exception_type.nil?
-            begin
-              klass = "Azure::Armrest::" + err.class.to_s.split("::").last + "Exception"
-              exception_type = const_get(klass)
-            rescue NameError
-              exception_type = Azure::Armrest::ApiException
-            end
-          end
-
-          raise exception_type.new(code, message, err)
-        end
-      end
-
       # Take an array of URI elements and join the together with the API version.
       def url_with_api_version(api_version, *paths)
         File.join(*paths) << "?api-version=#{api_version}"
