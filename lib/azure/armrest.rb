@@ -17,6 +17,7 @@ end
 
 # Load these first
 require 'azure/armrest/version'
+require 'azure/armrest/service_helper'
 require 'azure/armrest/configuration'
 require 'azure/armrest/environment'
 require 'azure/armrest/exception'

@@ -7,6 +7,7 @@ module Azure
     # Abstract base class for the other service classes.
     class ArmrestService
       extend Gem::Deprecate
+      include Azure::Armrest::ServiceHelper
 
       # Configuration to access azure APIs
       attr_accessor :armrest_configuration
@@ -262,44 +263,6 @@ module Azure
 
           raise exception_type.new(code, message, err)
         end
-      end
-
-      private
-
-      # REST verb methods
-
-      def rest_execute(url, body = nil, http_method = :get, encode = true)
-        url = encode ? Addressable::URI.encode(url) : url
-        headers = {:accept => 'application/json', :content_type => 'application/json'}
-        configuration.token.request(http_method, url, :body => body, :headers => headers).response
-      end
-
-      def rest_get(url)
-        rest_execute(url)
-      end
-
-      def rest_get_without_encoding(url)
-        rest_execute(url, nil, :get, false)
-      end
-
-      def rest_put(url, body = '')
-        rest_execute(url, body, :put)
-      end
-
-      def rest_post(url, body = '')
-        rest_execute(url, body, :post)
-      end
-
-      def rest_patch(url, body = '')
-        rest_execute(url, body, :patch)
-      end
-
-      def rest_delete(url)
-        rest_execute(url, nil, :delete)
-      end
-
-      def rest_head(url)
-        rest_execute(url, nil, :head)
       end
 
       # Take an array of URI elements and join the together with the API version.
