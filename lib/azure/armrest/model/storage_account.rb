@@ -1004,7 +1004,7 @@ module Azure
           url << "?#{query}"
         end
 
-        rest_get(url, headers)
+        rest_execute(url: url, headers: headers, use_token: false)
       end
 
       # Set the headers needed, including the Authorization header.
