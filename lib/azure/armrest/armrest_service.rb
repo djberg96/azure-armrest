@@ -270,7 +270,8 @@ module Azure
 
       def rest_execute(url, body = nil, http_method = :get, encode = true)
         url = encode ? Addressable::URI.encode(url) : url
-        configuration.token.request(http_method, url, :body => body).response
+        headers = {:accept => 'application/json', :content_type => 'application/json'}
+        configuration.token.request(http_method, url, :body => body, :headers => headers).response
       end
 
       def rest_get(url)
