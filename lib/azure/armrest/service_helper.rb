@@ -3,38 +3,38 @@ module Azure
     module ServiceHelper
       private
 
-      def rest_execute(url, body = nil, http_method = :get, encode = true)
+      def rest_execute(url: nil, body: nil, http_method: :get, encode: true, headers: {})
         url = encode ? Addressable::URI.encode(url) : url
-        headers = {:accept => 'application/json', :content_type => 'application/json'}
+        headers = headers.merge(:accept => 'application/json', :content_type => 'application/json')
         configuration.token.request(http_method, url, :body => body, :headers => headers).response
       end
 
-      def rest_get(url)
-        rest_execute(url)
+      def rest_get(url, headers = {})
+        rest_execute(url: url, headers: headers)
       end
 
-      def rest_get_without_encoding(url)
-        rest_execute(url, nil, :get, false)
+      def rest_get_without_encoding(url, headers = {})
+        rest_execute(url: url, encoding: false, headers: headers)
       end
 
-      def rest_put(url, body = '')
-        rest_execute(url, body, :put)
+      def rest_put(url, body = '', headers = {})
+        rest_execute(url: url, body: body, http_method: :put, headers: headers)
       end
 
-      def rest_post(url, body = '')
-        rest_execute(url, body, :post)
+      def rest_post(url, body = '', headers = {})
+        rest_execute(url: url, body: body, http_method: :post, headers: headers)
       end
 
-      def rest_patch(url, body = '')
-        rest_execute(url, body, :patch)
+      def rest_patch(url, body = '', headers = {})
+        rest_execute(url: url, body: body, http_method: :patch, headers: headers)
       end
 
-      def rest_delete(url)
-        rest_execute(url, nil, :delete)
+      def rest_delete(url, headers = {})
+        rest_execute(url: url, http_method: :delete, headers: headers)
       end
 
-      def rest_head(url)
-        rest_execute(url, nil, :head)
+      def rest_head(url, headers = {})
+        rest_execute(url: url, http_method: :head, headers: headers)
       end
     end
   end
