@@ -3,12 +3,24 @@ module Azure
     module ServiceHelper
       private
 
-      def rest_execute(url:, body: nil, http_method: :get, encode: true, headers: {})
+      def rest_execute(url:, body: nil, http_method: :get, encode: true, use_token: true, headers: {})
         url = encode ? Addressable::URI.encode(url) : url
         headers = headers.transform_keys { |key| key.to_s.tr('-', '_').downcase.to_sym }
         headers[:accept] ||= 'application/json'
         headers[:content_type] ||= 'application/json'
-        configuration.token.request(http_method, url, :body => body, :headers => headers).response
+
+        # For some requests we don't want to use the client token, and instead
+        # want to make a plain request. This is typically done for storage account
+        # requests. In these cases, we still want to retain the configuration
+        # options, such as proxy information.
+
+        if use_token
+          configuration.token.request(http_method, url, :body => body, :headers => headers).response
+        else
+          options = configuration.token.client.options[:connection_opts]
+          options.merge!(:headers => headers)
+          Faraday.new(url, options).send(http_method)
+        end
       end
 
       def rest_get(url, headers = {})
