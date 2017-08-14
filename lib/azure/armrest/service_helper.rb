@@ -5,7 +5,8 @@ module Azure
 
       def rest_execute(url:, body: nil, http_method: :get, encode: true, headers: {})
         url = encode ? Addressable::URI.encode(url) : url
-        headers = headers.merge(:accept => 'application/json', :content_type => 'application/json')
+        headers[:accept] ||= 'application/json'
+        headers[:content_type] ||= 'application/json'
         configuration.token.request(http_method, url, :body => body, :headers => headers).response
       end
 
