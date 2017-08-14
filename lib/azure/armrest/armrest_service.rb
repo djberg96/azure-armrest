@@ -270,7 +270,7 @@ module Azure
 
       def rest_execute(url, body = nil, http_method = :get, encode = true)
         url = encode ? Addressable::URI.encode(url) : url
-        configuration.token.send(http_method, url).response
+        configuration.token.request(http_method, url, :body => body).response
       end
 
       def rest_get(url)
