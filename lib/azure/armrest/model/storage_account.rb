@@ -48,9 +48,6 @@ module Azure
       def initialize(json)
         super
         @storage_api_version = '2016-05-31'
-        @proxy = ENV['http_proxy']
-        @ssl_version = 'TLSv1'
-        @ssl_verify = nil
       end
 
       # Returns a list of tables for the given storage account +key+. Note
@@ -142,7 +139,7 @@ module Azure
         response = file_response(key, query, 'put', '', File.join(share, directory))
 
         Azure::Armrest::ResponseHeaders.new(response.headers).tap do |rh|
-          rh.response_code = response.code
+          rh.response_code = response.status
         end
       end
 
@@ -158,7 +155,7 @@ module Azure
         response = file_response(key, query, 'delete', '', File.join(share, directory))
 
         Azure::Armrest::ResponseHeaders.new(response.headers).tap do |rh|
-          rh.response_code = response.code
+          rh.response_code = response.status
         end
       end
 
@@ -173,7 +170,9 @@ module Azure
 
         response = file_response(key, query, 'get', '', File.join(share, directory))
 
-        ShareDirectory.new(response.headers)
+        ShareDirectory.new(response.headers).tap do |obj|
+          obj.response_code = response.status
+        end
       end
 
       # Get metadata for the specified +share+ or parent directory.
@@ -971,23 +970,12 @@ module Azure
       def file_response(key, query, request_type = 'get', payload = '', *args)
         url = File.join(properties.primary_endpoints.file, *args)
         url += "?#{query}" if query && !query.empty?
-        request_method = "rest_#{request_type}".to_sym
 
         headers = build_headers(url, key, :file, :verb => request_type.to_s.upcase)
+        headers.delete('auth_string')
+        headers.delete('verb')
 
-        params = {
-          :url         => url,
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify,
-        }
-
-        if %w[put post].include?(request_type.to_s.downcase)
-          params[:payload] = payload
-        end
-
-        ArmrestService.send(request_method, params)
+        rest_execute(url: url, headers: headers, http_method: request_type, body: payload, use_token: false)
       end
 
       # Using the blob primary endpoint as a base, join any arguments to the
