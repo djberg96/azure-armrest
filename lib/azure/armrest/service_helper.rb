@@ -15,11 +15,23 @@ module Azure
         # options, such as proxy information.
 
         if use_token
-          configuration.token.request(http_method, url, :body => body, :headers => headers).response
+          configuration.token.request(http_method.to_sym, url, :body => body, :headers => headers).response
         else
           options = configuration.token.client.options[:connection_opts]
           options.merge!(:headers => headers)
-          Faraday.new(url, options).send(http_method)
+
+          response = Faraday.new(url, options).send(http_method) do |req|
+            req.body = body
+          end
+
+          unless response.success?
+            message = Nokogiri::XML.parse(response.body).xpath("//Code/text()")[0].to_s
+            error_class = Azure::Armrest::EXCEPTION_MAP[response.status]
+            error_class ||= Azure::Armrest::ApiException
+            raise error_class.new(response.status, message, response.reason_phrase)
+          end
+
+          response
         end
       end
 
