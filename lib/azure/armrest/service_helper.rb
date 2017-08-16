@@ -26,7 +26,7 @@ module Azure
 
           unless response.success?
             message = Nokogiri::XML.parse(response.body).xpath("//Code/text()")[0].to_s
-            message ||= response.body
+            message = response.body if message.empty?
             error_class = Azure::Armrest::EXCEPTION_MAP[response.status]
             error_class ||= Azure::Armrest::ApiException
             raise error_class.new(response.status, message, response.reason_phrase)
