@@ -5,7 +5,10 @@ module Azure
 
       def rest_execute(url:, body: nil, http_method: :get, encode: true, use_token: true, headers: {})
         url = encode ? Addressable::URI.encode(url) : url
+
         headers = headers.transform_keys { |key| key.to_s.tr('-', '_').downcase.to_sym }
+        headers = headers.transform_values{ |value| value.to_s }
+
         headers[:accept] ||= 'application/json'
         headers[:content_type] ||= 'application/json'
 
