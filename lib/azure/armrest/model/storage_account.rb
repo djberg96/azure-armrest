@@ -237,7 +237,7 @@ module Azure
         response.body
       end
 
-      # Returns the raw contents of the specified file.
+      # Returns the properties of the specified file.
       #
       # The only supported option at this time is a "timeout" option.
       #
@@ -268,7 +268,7 @@ module Azure
       # * version
       #
       # Note that this does not set the content of the file, it only creates
-      # in the file share.
+      # it in the file share.
       #
       def create_file(share, file, key = access_key, options = {})
         raise ArgumentError, "No access key specified" unless key
@@ -289,18 +289,10 @@ module Azure
 
         headers = build_headers(url, key, :file, hash)
 
-        response = ArmrestService.send(
-          :rest_put,
-          :url         => url,
-          :payload     => '',
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify
-        )
+        response = rest_execute(url: url, http_method: :put, headers: headers, use_token: false, body: '')
 
         Azure::Armrest::ResponseHeaders.new(response.headers).tap do |rh|
-          rh.response_code = response.code
+          rh.response_code = response.status
         end
       end
 
@@ -1015,6 +1007,10 @@ module Azure
 
         headers.merge!(additional_headers)
         headers['authorization'] = sig.signature(sig_type, headers)
+
+        # Used by the azure-signature gem, but we don't need to keep them.
+        headers.delete('auth_string')
+        headers.delete('verb')
 
         headers
       end
