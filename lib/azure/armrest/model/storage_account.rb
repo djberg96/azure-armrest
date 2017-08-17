@@ -488,19 +488,10 @@ module Azure
         url = File.join(properties.primary_endpoints.blob, container, blob) + "?comp=properties"
 
         hash = options.transform_keys { |okey| "x-ms-blob-" + okey.to_s.tr('_', '-') }
-
         hash['verb'] = 'PUT'
 
         headers = build_headers(url, key, :blob, hash)
-
-        response = ArmrestService.send(
-          :rest_put,
-          :url         => url,
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify
-        )
+        response = rest_execute(url: url, headers: headers, use_token: false, http_method: :put)
 
         BlobProperty.new(response.headers.merge(:container => container, :name => blob))
       end
@@ -636,20 +627,11 @@ module Azure
         options = {'x-ms-copy-source' => src_url, 'if-none-match' => '*', :verb => 'PUT'}
 
         headers = build_headers(dst_url, key, :blob, options)
-
-        response = ArmrestService.send(
-          :rest_put,
-          :url         => dst_url,
-          :payload     => '',
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify
-        )
+        response = rest_execute(url: dst_url, headers: headers, use_token: false, http_method: :put)
 
         blob = blob_properties(dst_container, dst_blob, key)
         blob.response_headers = Azure::Armrest::ResponseHeaders.new(response.headers)
-        blob.response_code = response.code
+        blob.response_code = response.status
 
         blob
       end
