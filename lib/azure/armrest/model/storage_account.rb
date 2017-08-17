@@ -308,7 +308,7 @@ module Azure
         response = file_response(key, query, 'delete', '', File.join(share, file))
 
         Azure::Armrest::ResponseHeaders.new(response.headers).tap do |rh|
-          rh.response_code = response.code
+          rh.response_code = response.status
         end
       end
 
