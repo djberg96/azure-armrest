@@ -22,15 +22,6 @@ module Azure
       # The grant type. The default is client_credentials.
       attr_accessor :grant_type
 
-      # Proxy to be used for all http requests.
-      attr_reader :proxy
-
-      # SSL version to be used for all http requests.
-      attr_accessor :ssl_version
-
-      # SSL verify mode for all http requests.
-      attr_accessor :ssl_verify
-
       # Namespace providers, their resource types, locations and supported api-version strings.
       attr_reader :providers
 
@@ -41,7 +32,10 @@ module Azure
       # default is Azure::Armrest::Environment::Public.
       attr_accessor :environment
 
+      # A hash of HTTP options to be used with each request, such as proxy information.
       attr_accessor :connection_options
+
+      # A hash of SSL options passed along with each HTTP request.
       attr_accessor :ssl_options
 
       # Yields a new Azure::Armrest::Configuration objects. Note that you must
@@ -50,12 +44,14 @@ module Azure
       #
       # Example:
       #
+      #   # You may also pass a hash as before so long as the keys are symbols.
       #   config = Azure::Armrest::Configuration.new(
-      #     :client_id       => 'xxxx',
-      #     :client_key      => 'yyyy',
-      #     :tenant_id       => 'zzzz',
-      #     :subscription_id => 'abcd'
+      #     client_id: 'xxxx',
+      #     client_key: 'yyyy',
+      #     tenant_id: 'zzzz'
       #   )
+      #
+      #   config.subscription_id => 'abcd'
       #
       # If you specify a :resource_group, that group will be used for resource
       # group based service class requests. Otherwise, you will need to specify
@@ -67,7 +63,7 @@ module Azure
       # The constructor will also validate that the subscription ID is valid
       # if present.
       #
-      def initialize(args)
+      def initialize(**kwargs)
         # Use defaults, and override with provided arguments
         options = {
           :api_version => '2017-05-10',
@@ -80,7 +76,7 @@ module Azure
           :connection_options => {
             :proxy => ENV['http_proxy'],
           }
-        }.merge(args.symbolize_keys)
+        }.merge(kwargs)
 
         Faraday.default_adapter = :net_http_persistent
 
