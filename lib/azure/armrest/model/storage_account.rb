@@ -289,7 +289,7 @@ module Azure
 
         headers = build_headers(url, key, :file, hash)
 
-        response = rest_execute(url: url, http_method: :put, headers: headers, use_token: false, body: '')
+        response = rest_execute(url: url, http_method: :put, headers: headers, use_token: false)
 
         Azure::Armrest::ResponseHeaders.new(response.headers).tap do |rh|
           rh.response_code = response.status
