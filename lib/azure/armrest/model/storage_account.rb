@@ -646,20 +646,11 @@ module Azure
         url += "?snapshot=" + options[:date] if options[:date]
 
         headers = build_headers(url, key, :blob, :verb => 'DELETE')
+        response = rest_execute(url: url, headers: headers, use_token: false, http_method: :delete)
 
-        response = ArmrestService.send(
-          :rest_delete,
-          :url         => url,
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify
-        )
-
-        headers = Azure::Armrest::ResponseHeaders.new(response.headers)
-        headers.response_code = response.code
-
-        headers
+        Azure::Armrest::ResponseHeaders.new(response.headers).tap do |rh|
+          rh.response_code = response.status
+        end
       end
 
       # Create new blob for a container.
@@ -720,21 +711,11 @@ module Azure
         hash['content-type'] ||= hash['x-ms-blob-content-type'] || 'application/octet-stream'
 
         headers = build_headers(url, key, :blob, hash)
+        response = rest_execute(url: url, http_method: :put, headers: headers, use_token: false)
 
-        response = ArmrestService.send(
-          :rest_put,
-          :url         => url,
-          :payload     => payload,
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify
-        )
-
-        resp_headers = Azure::Armrest::ResponseHeaders.new(response.headers)
-        resp_headers.response_code = response.code
-
-        resp_headers
+        Azure::Armrest::ResponseHeaders.new(response.headers).tap do |rh|
+          rh.response_code = response.status
+        end
       end
 
       # Create a read-only snapshot of a blob.
