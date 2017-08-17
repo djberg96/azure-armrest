@@ -461,15 +461,7 @@ module Azure
         url += "?snapshot=" + options[:date] if options[:date]
 
         headers = build_headers(url, key, :blob, :verb => 'HEAD')
-
-        response = ArmrestService.send(
-          :rest_head,
-          :url         => url,
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify
-        )
+        response = rest_execute(url: url, http_method: :head, headers: headers, use_token: false)
 
         BlobProperty.new(response.headers.merge(:container => container, :name => blob))
       end
