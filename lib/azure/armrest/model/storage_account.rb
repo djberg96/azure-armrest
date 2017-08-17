@@ -929,15 +929,7 @@ module Azure
       def blob_response(key, query, *args)
         url = File.join(properties.primary_endpoints.blob, *args) + "?#{query}"
         headers = build_headers(url, key, 'blob')
-
-        ArmrestService.send(
-          :rest_get,
-          :url         => url,
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify,
-        )
+        rest_execute(url: url, use_token: false, headers: headers)
       end
 
       # Using the file primary endpoint as a base, join any arguments to the
