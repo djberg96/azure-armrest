@@ -752,21 +752,11 @@ module Azure
         hash['verb'] = 'PUT'
 
         headers = build_headers(url, key, :blob, hash)
+        response = reset_execute(url: url, http_method: :put, headers: headers, use_token: false)
 
-        response = ArmrestService.send(
-          :rest_put,
-          :url         => url,
-          :payload     => '',
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify
-        )
-
-        headers = Azure::Armrest::ResponseHeaders.new(response.headers)
-        headers.response_code = response.code
-
-        headers
+        Azure::Armrest::ResponseHeaders.new(response.headers).tap do |rh|
+          rh.response_code = response.status
+        end
       end
 
       # Get the contents of the given +blob+ found in +container+ using the
@@ -830,14 +820,7 @@ module Azure
 
         headers = build_headers(url, key, :blob, additional_headers)
 
-        ArmrestService.send(
-          :rest_get,
-          :url         => url,
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify,
-        )
+        rest_execute(url: url, headers: headers, use_token: false)
       end
 
       private
