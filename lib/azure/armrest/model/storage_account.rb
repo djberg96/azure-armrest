@@ -368,18 +368,10 @@ module Azure
 
         headers = build_headers(url, key, :file, hash)
 
-        response = ArmrestService.send(
-          :rest_put,
-          :url         => url,
-          :payload     => content,
-          :headers     => headers,
-          :proxy       => proxy,
-          :ssl_version => ssl_version,
-          :ssl_verify  => ssl_verify
-        )
+        response = rest_execute(url: url, http_method: :put, body: content, headers: headers, use_token: false)
 
         Azure::Armrest::ResponseHeaders.new(response.headers).tap do |rh|
-          rh.response_code = response.code
+          rh.response_code = response.status
         end
       end
 
