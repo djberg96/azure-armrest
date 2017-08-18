@@ -907,7 +907,7 @@ module Azure
         sig = Signature.new(url, key)
         sig_type ||= 'blob'
 
-        # RestClient will set the Content-Type to application/x-www-form-urlencoded.
+        # Faraday will set the Content-Type to application/x-www-form-urlencoded.
         # We must override this setting or the request will fail in some cases.
 
         content_type = additional_headers['content-type'] || ''

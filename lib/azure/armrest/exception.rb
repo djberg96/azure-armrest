@@ -5,8 +5,8 @@ module Azure
       attr_writer :message
 
       # Create a new Armrest::Exception object. The +message+ should be an
-      # error string, while +cause_exception+ is typically set to the
-      # raw RestClient exception.
+      # error string, while +cause_exception+ is typically set on the
+      # raw Faraday exception.
       #
       # You will not typically use this object directly.
       #
