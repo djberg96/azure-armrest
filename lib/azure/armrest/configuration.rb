@@ -38,6 +38,9 @@ module Azure
       # A hash of SSL options passed along with each HTTP request.
       attr_accessor :ssl_options
 
+      # The adapter used by Faraday. The default is :net_http_persistent.
+      attr_accessor :adapter
+
       # Yields a new Azure::Armrest::Configuration objects. Note that you must
       # specify a client_id, client_key, tenant_id. The subscription_id is optional
       # but should be specified in most cases. All other parameters are optional.
@@ -70,6 +73,7 @@ module Azure
           :grant_type  => 'client_credentials',
           :max_threads => 10,
           :environment => Azure::Armrest::Environment::Public,
+          :adapter     => :net_http_persistent,
           :ssl_options => {
             :version => 'TLSv1',
           },
@@ -78,7 +82,7 @@ module Azure
           }
         }.merge(kwargs)
 
-        Faraday.default_adapter = :net_http_persistent
+        Faraday.default_adapter = options[:adapter]
 
         # Avoid thread safety issues for VCR testing.
         options[:max_threads] = 1 if defined?(VCR)
@@ -132,7 +136,7 @@ module Azure
       # Explicitly set a token. The +token_object+ should be an OAuth2 token.
       #
       def token=(token_object)
-        validate_token_time(token_object) 
+        validate_token_time(token_object)
         @token = token_object
       end
 
