@@ -82,6 +82,11 @@ module Azure
           }
         }.merge(kwargs)
 
+        if options[:subscription_id]
+          msg = "Cannot set subscription ID until after configuration object is created"
+          raise ArgumentError, msg
+        end
+
         Faraday.default_adapter = options[:adapter]
 
         # Avoid thread safety issues for VCR testing.
