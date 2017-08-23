@@ -5,6 +5,7 @@ require 'thread'
 require 'addressable'
 require 'parallel'
 require 'memoist'
+require 'faraday/detailed_logger'
 require 'active_support/core_ext/hash/keys'
 
 # The Azure module serves as a namespace.

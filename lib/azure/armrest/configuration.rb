@@ -91,6 +91,7 @@ module Azure
         @tenant_id  = options.delete(:tenant_id)
         @client_id  = options.delete(:client_id)
         @client_key = options.delete(:client_key)
+        @log        = options.delete(:log)
 
         unless client_id && client_key && tenant_id
           raise ArgumentError, "client_id, client_key, and tenant_id must all be specified"
@@ -100,6 +101,24 @@ module Azure
         options.each { |key, value| send("#{key}=", value) }
 
         @token = options[:token] || fetch_token
+      end
+
+      def log
+        @log
+      end
+
+      def log=(object, level = :info)
+        @log = object.kind_of?(Logger) ? object : Logger.new(object)
+        @log.datetime_format = '%Y-%m-%d %H:%M:%S'
+
+        formatter ||= proc do |severity, datetime, progname, msg|
+          msg = msg.sub /Bearer(.*?)\"/, 'Bearer [FILTERED]"'
+          "[#{datetime}] - #{severity} -- : #{msg}"
+        end
+
+        @log.formatter = formatter
+
+        @log
       end
 
       # Allow for strings or URI objects when assigning a proxy.
@@ -251,6 +270,8 @@ module Azure
           :ssl             => ssl_options,
           :connection_opts => connection_options
         )
+
+        client.connection.response(:detailed_logger, log) if log
 
         client.send(self.grant_type).get_token(:resource => environment.resource_manager_url)
       end

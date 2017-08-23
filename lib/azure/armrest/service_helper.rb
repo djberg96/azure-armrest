@@ -23,7 +23,11 @@ module Azure
           options = configuration.token.client.options[:connection_opts]
           options.merge!(:headers => headers)
 
-          response = Faraday.new(url, options).send(http_method) do |req|
+          connection = Faraday.new(url, options) do |f|
+            f.response :detailed_logger, configuration.log if configuration.log
+          end
+
+          response = connection.send(http_method) do |req|
             req.body = body
           end
 
