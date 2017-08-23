@@ -87,13 +87,7 @@ module Azure
         # Avoid thread safety issues for VCR testing.
         options[:max_threads] = 1 if defined?(VCR)
 
-        # We need to ensure these are set before subscription_id=
-        @tenant_id  = options.delete(:tenant_id)
-        @client_id  = options.delete(:client_id)
-        @client_key = options.delete(:client_key)
-        @log        = options.delete(:log)
-
-        unless client_id && client_key && tenant_id
+        unless options[:client_id] && options[:client_key] && options[:tenant_id]
           raise ArgumentError, "client_id, client_key, and tenant_id must all be specified"
         end
 
@@ -103,17 +97,26 @@ module Azure
         @token = options[:token] || fetch_token
       end
 
+      # The logging object that logs http requests.
+      #
       def log
         @log
       end
 
-      def log=(object, level = :info)
-        @log = object.kind_of?(Logger) ? object : Logger.new(object)
+      # Set the log for Faraday http requests. The argument may be a Logger object, or a
+      # path to a file that will become a logger object.
+      #
+      # It is generally recommended that you set the logger.level to 1 or higher unless
+      # you're in debug mode. If it's set at 0 (the default for a Logger object) then
+      # you will get verbose output.
+      #
+      def log=(string_or_logger)
+        @log = string_or_logger.kind_of?(Logger) ? string_or_logger : Logger.new(string_or_logger)
         @log.datetime_format = '%Y-%m-%d %H:%M:%S'
 
         formatter ||= proc do |severity, datetime, progname, msg|
           msg = msg.sub /Bearer(.*?)\"/, 'Bearer [FILTERED]"'
-          "[#{datetime}] - #{severity} -- : #{msg}"
+          "\n[#{datetime}] - #{severity} -- : #{msg}"
         end
 
         @log.formatter = formatter
