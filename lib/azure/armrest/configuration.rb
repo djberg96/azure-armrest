@@ -19,9 +19,6 @@ module Azure
       # The resource group used for http requests.
       attr_accessor :resource_group
 
-      # The grant type. The default is client_credentials.
-      attr_accessor :grant_type
-
       # Namespace providers, their resource types, locations and supported api-version strings.
       attr_reader :providers
 
@@ -70,7 +67,6 @@ module Azure
         # Use defaults, and override with provided arguments
         options = {
           :api_version => '2017-05-10',
-          :grant_type  => 'client_credentials',
           :max_threads => 10,
           :environment => Azure::Armrest::Environment::Public,
           :adapter     => :net_http_persistent,
@@ -266,7 +262,7 @@ module Azure
 
         client.connection.response(:detailed_logger, log) if log
 
-        client.send(self.grant_type).get_token(:resource => environment.resource_manager_url)
+        client.send('client_credentials').get_token(:resource => environment.resource_manager_url)
       end
     end
   end
