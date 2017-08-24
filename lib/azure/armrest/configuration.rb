@@ -176,21 +176,6 @@ module Azure
         end
       end
 
-      # Returns the logger instance. It might be initially set through a log
-      # file path, file handler, or already a logger instance.
-      #
-      def self.log
-        OAuth2.logger
-      end
-
-      # Sets the log to +output+, which can be a file, a file handle, or
-      # a logger instance
-      #
-      def self.log=(output)
-        output = Logger.new(output) unless output.kind_of?(Logger)
-        OAuth2.logger = output
-      end
-
       # Returns a list of subscriptions for the current configuration object.
       #
       def subscriptions
