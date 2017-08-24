@@ -263,7 +263,7 @@ module Azure
 
         client.connection.response(:detailed_logger, log) if log
 
-        client.send('client_credentials').get_token(:resource => environment.resource_manager_url)
+        client.client_credentials.get_token(:resource => environment.resource_manager_url)
       end
     end
   end
