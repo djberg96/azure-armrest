@@ -143,6 +143,9 @@ module Azure
         value
       end
 
+      # Returns true if both objects are Configuration objects and the
+      # client_id, client_key and tenant_id are identical.
+      #
       def eql?(other)
         return true if equal?(other)
         return false unless self.class == other.class
@@ -203,15 +206,13 @@ module Azure
       end
 
       def ensure_token
-        fetch_token if @token.nil? || Time.now.utc > Time.at(@token.expires_at)
+        fetch_token if @token.nil? || @token.expired?
       end
 
       # Don't allow tokens from the past to be set.
       #
       def validate_token_time(token)
-        if Time.at(token.expires_at).utc < Time.now.utc
-          raise ArgumentError, 'token expires_at date invalid'
-        end
+        raise ArgumentError, 'token expired' if token.expired?
       end
 
       # Build a one-time lookup hash that sets the appropriate api-version
