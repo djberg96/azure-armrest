@@ -48,7 +48,7 @@ module Azure
       end
 
       def rest_get_without_encoding(url, headers = {})
-        rest_execute(url: url, encoding: false, headers: headers)
+        rest_execute(url: url, encode: false, headers: headers)
       end
 
       def rest_put(url, body = '', headers = {})
