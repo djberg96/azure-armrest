@@ -19,21 +19,13 @@ module Azure
       # Same as other resource based list methods, but also sets the proxy on each model object.
       #
       def list(resource_group = configuration.resource_group)
-        super.each do |m|
-          m.proxy       = configuration.proxy
-          m.ssl_version = configuration.ssl_version
-          m.ssl_verify  = configuration.ssl_verify
-        end
+        super.each { |m| m.configuration = configuration }
       end
 
       # Same as other resource based list_all methods, but also sets the proxy on each model object.
       #
       def list_all(filter = {})
-        super(filter).each do |m|
-          m.proxy       = configuration.proxy
-          m.ssl_version = configuration.ssl_version
-          m.ssl_verify  = configuration.ssl_verify
-        end
+        super.each { |m| m.configuration = configuration }
       end
 
       # Creates a new storage account, or updates an existing account with the
@@ -82,9 +74,7 @@ module Azure
           url << "&validating=" << validating if validating
         end
 
-        acct.proxy       = configuration.proxy
-        acct.ssl_version = configuration.ssl_version
-        acct.ssl_verify  = configuration.ssl_verify
+        acct.configuration = configuration
 
         acct
       end
