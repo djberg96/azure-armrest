@@ -3,6 +3,29 @@ module Azure
     module ServiceHelper
       private
 
+      # Our custom error handler for Faraday that will convert a Faraday
+      # using the exception map that we defined. The Faraday library does
+      # not raise exceptions automatically by default.
+      #
+      class ErrorHandler < Faraday::Response::Middleware
+        def on_complete(env)
+          case env.status
+          when 400..600
+            klass = Azure::Armrest::EXCEPTION_MAP[env.status]
+            klass ||= Azure::Armrest::Exception
+
+            message = Nokogiri::XML.parse(env.body).xpath("//Code/text()")[0].to_s
+            message = env.body if message.empty?
+
+            raise klass.new(env.status, message, env.reason_phrase)
+          end
+        end
+
+        def response_values(env)
+          {:status => env.status, :headers => env.response_headers, :body => env.body}
+        end
+      end
+
       def rest_execute(url:, body: nil, http_method: :get, encode: true, use_token: true, headers: {})
         url = encode ? Addressable::URI.encode(url) : url
 
@@ -24,19 +47,13 @@ module Azure
           options.merge!(:headers => headers)
 
           connection = Faraday.new(url, options) do |f|
+            f.use ErrorHandler
+            f.adapter Faraday.default_adapter
             f.response :detailed_logger, configuration.log if configuration.log
           end
 
           response = connection.send(http_method) do |req|
             req.body = body
-          end
-
-          unless response.success?
-            message = Nokogiri::XML.parse(response.body).xpath("//Code/text()")[0].to_s
-            message = response.body if message.empty?
-            error_class = Azure::Armrest::EXCEPTION_MAP[response.status]
-            error_class ||= Azure::Armrest::ApiException
-            raise error_class.new(response.status, message, response.reason_phrase)
           end
 
           response

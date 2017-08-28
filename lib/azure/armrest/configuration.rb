@@ -261,7 +261,11 @@ module Azure
           :connection_opts => connection_options
         )
 
-        client.connection.response(:detailed_logger, log) if log
+        client.connection do |c|
+          c.use Azure::Armrest::ServiceHelper::ErrorHandler
+          c.adapter Faraday.default_adapter
+          c.response(:detailed_logger, log) if log
+        end
 
         client.client_credentials.get_token(:resource => environment.resource_manager_url)
       end
