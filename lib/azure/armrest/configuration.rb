@@ -41,24 +41,6 @@ module Azure
       # The resource group used for http requests.
       attr_accessor :resource_group
 
-      # The grant type. The default is client_credentials.
-      attr_accessor :grant_type
-
-      # The content type specified for http requests. The default is 'application/json'
-      attr_accessor :content_type
-
-      # The accept type specified for http request results. The default is 'application/json'
-      attr_accessor :accept
-
-      # Proxy to be used for all http requests.
-      attr_reader :proxy
-
-      # SSL version to be used for all http requests.
-      attr_accessor :ssl_version
-
-      # SSL verify mode for all http requests.
-      attr_accessor :ssl_verify
-
       # Namespace providers, their resource types, locations and supported api-version strings.
       attr_reader :providers
 
@@ -69,18 +51,31 @@ module Azure
       # default is Azure::Armrest::Environment::Public.
       attr_accessor :environment
 
+      # A hash of HTTP options to be used with each request, such as proxy information.
+      attr_accessor :connection_options
+
+      # A hash of SSL options passed along with each HTTP request.
+      attr_accessor :ssl_options
+
+      # The adapter used by Faraday under the hood for requests. The default
+      # is :net_http_persistent.
+      attr_accessor :adapter
+
       # Yields a new Azure::Armrest::Configuration objects. Note that you must
-      # specify a client_id, client_key, tenant_id. The subscription_id is optional
-      # but should be specified in most cases. All other parameters are optional.
+      # specify a client_id, client_key, tenant_id. All other parameters are optional.
+      #
+      # Note that the subscription_id should be set before attempting to perform
+      # any operations.
       #
       # Example:
       #
       #   config = Azure::Armrest::Configuration.new(
-      #     :client_id       => 'xxxx',
-      #     :client_key      => 'yyyy',
-      #     :tenant_id       => 'zzzz',
-      #     :subscription_id => 'abcd'
+      #     client_id:  'xxxx',
+      #     client_key: 'yyyy',
+      #     tenant_id:  'zzzz'
       #   )
+      #
+      #   config.subscription_id = 'abc'
       #
       # If you specify a :resource_group, that group will be used for resource
       # group based service class requests. Otherwise, you will need to specify
@@ -92,42 +87,37 @@ module Azure
       # The constructor will also validate that the subscription ID is valid
       # if present.
       #
-      def initialize(args)
+      def initialize(**kwargs)
         # Use defaults, and override with provided arguments
         options = {
-          :api_version   => '2015-01-01',
-          :accept        => 'application/json',
-          :content_type  => 'application/json',
-          :grant_type    => 'client_credentials',
-          :proxy         => ENV['http_proxy'],
-          :ssl_version   => 'TLSv1',
-          :max_threads   => 10,
-          :environment   => Azure::Armrest::Environment::Public
+          :api_version => '2017-05-10',
+          :max_threads => 10,
+          :adapter     => :net_http_persistent,
+          :environment => Azure::Armrest::Environment::Public
+          :ssl_options => {
+            :version => 'TLSv1'
+          },
+          :connection_options => {
+            :proxy => ENV['http_proxy'],
+          }
         }.merge(args.symbolize_keys)
+
+        if options[:subscription_id]
+          msg = "Cannot set subscription ID until after configuration object is created"
+          raise ArgumentError, msg
+        end
+
+        unless options[:client_id] && options[:client_key] && options[:tenant_id]
+          raise ArgumentError, "client_id, client_key, and tenant_id must all be specified"
+        end
+
+        Faraday.default_adapter = options[:adapter]
 
         # Avoid thread safety issues for VCR testing.
         options[:max_threads] = 1 if defined?(VCR)
 
-        user_token = options.delete(:token)
-        user_token_expiration = options.delete(:token_expiration)
-
-        # We need to ensure these are set before subscription_id=
-        @tenant_id = options.delete(:tenant_id)
-        @client_id = options.delete(:client_id)
-        @client_key = options.delete(:client_key)
-
-        unless client_id && client_key && tenant_id
-          raise ArgumentError, "client_id, client_key, and tenant_id must all be specified"
-        end
-
         # Then set the remaining options automatically
         options.each { |key, value| send("#{key}=", value) }
-
-        if user_token && user_token_expiration
-          set_token(user_token, user_token_expiration)
-        elsif user_token || user_token_expiration
-          raise ArgumentError, "token and token_expiration must be both specified"
-        end
       end
 
       def hash
@@ -191,19 +181,31 @@ module Azure
         end
       end
 
-      # Returns the logger instance. It might be initially set through a log
-      # file path, file handler, or already a logger instance.
+      # The logging object that logs http requests.
       #
-      def self.log
-        RestClient.log
+      def log
+        @log
       end
 
-      # Sets the log to +output+, which can be a file, a file handle, or
-      # a logger instance
+      # Set the log for Faraday http requests. The argument may be a Logger object, or a
+      # path to a file that will become a logger object.
       #
-      def self.log=(output)
-        output = Logger.new(output) unless output.kind_of?(Logger)
-        RestClient.log = output
+      # It is generally recommended that you set the logger.level to 1 or higher unless
+      # you're in debug mode. If it's set at 0 (the default for a Logger object) then
+      # you will get verbose output.
+      #
+      def log=(string_or_logger)
+        @log = string_or_logger.kind_of?(Logger) ? string_or_logger : Logger.new(string_or_logger)
+        @log.datetime_format = '%Y-%m-%d %H:%M:%S'
+
+        formatter ||= proc do |severity, datetime, progname, msg|
+          msg = msg.sub /Bearer(.*?)\"/, 'Bearer [FILTERED]"'
+          "\n[#{datetime}] - #{severity} -- : #{msg}"
+        end
+
+        @log.formatter = formatter
+
+        @log
       end
 
       # Returns a list of subscriptions for the current configuration object.
