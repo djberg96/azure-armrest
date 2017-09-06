@@ -35,8 +35,6 @@ module Azure
       # A hash of SSL options passed along with each HTTP request.
       attr_accessor :ssl_options
 
-      attr_reader :http_client
-
       # Yields a new Azure::Armrest::Configuration objects. Note that you must
       # specify a client_id, client_key, tenant_id. The subscription_id is optional
       # but should be specified in most cases. All other parameters are optional.
@@ -178,6 +176,10 @@ module Azure
       end
 
       private
+
+      def http_client
+        @http_client
+      end
 
       # Validate the subscription ID for the given credentials. Returns the
       # subscription ID if valid.
