@@ -5,7 +5,7 @@ module Azure
       # because it does not have a service name or a provider.
       def initialize(configuration, options = {})
         @armrest_configuration = configuration
-        @api_version = options[:api_version] || '2016-06-01'
+        @api_version = options[:api_version] || '2017-06-01'
       end
 
       # Returns a list of Subscription objects for the current tenant, one for

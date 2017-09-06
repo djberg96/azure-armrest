@@ -35,8 +35,7 @@ module Azure
       # A hash of SSL options passed along with each HTTP request.
       attr_accessor :ssl_options
 
-      # The adapter used by Faraday. The default is :net_http_persistent.
-      attr_accessor :adapter
+      attr_reader :http_client
 
       # Yields a new Azure::Armrest::Configuration objects. Note that you must
       # specify a client_id, client_key, tenant_id. The subscription_id is optional
@@ -69,7 +68,6 @@ module Azure
           :api_version => '2017-05-10',
           :max_threads => 10,
           :environment => Azure::Armrest::Environment::Public,
-          :adapter     => :net_http_persistent,
           :ssl_options => {
             :version => 'TLSv1',
           },
@@ -83,12 +81,7 @@ module Azure
           raise ArgumentError, msg
         end
 
-        @oauth2 = nil
-
-        Faraday.default_adapter = options[:adapter]
-
-        # Avoid thread safety issues for VCR testing.
-        options[:max_threads] = 1 if defined?(VCR)
+        @http_client = HTTPClient.new
 
         unless options[:client_id] && options[:client_key] && options[:tenant_id]
           raise ArgumentError, "client_id, client_key, and tenant_id must all be specified"
@@ -124,7 +117,6 @@ module Azure
         end
 
         @log.formatter = formatter
-        @oauth2.connection.response(:detailed_logger, @log) if @oauth2
 
         @log
       end
@@ -255,19 +247,19 @@ module Azure
         token_url = File.join(tenant_id, 'oauth2', 'token')
         auth_url  = File.join(site_url, token_url)
 
-        @oauth2 = OAuth2::Client.new(
-          client_id,
-          client_key,
-          :site            => site_url,
-          :authorize_url   => auth_url,
-          :token_url       => token_url,
-          :ssl             => ssl_options,
-          :connection_opts => connection_options
-        )
+        body = {
+          :grant_type    => 'client_credentials',
+          :client_id     => client_id,
+          :client_secret => client_key,
+          :resource      => environment.resource_manager_url
+        }
 
-        @oauth2.connection.response(:detailed_logger, log) if log
+        response = http_client.post(auth_url, body)
 
-        @oauth2.client_credentials.get_token(:resource => environment.resource_manager_url)
+        @token = JSON.parse(response.body)['access_token']
+        http_client.default_header = {'Authorization' => "Bearer #{@token}"}
+
+        @token
       end
     end
   end
