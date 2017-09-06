@@ -18,8 +18,7 @@ module Azure
         # options, such as proxy information.
 
         if use_token
-          #configuration.token.request(http_method.to_sym, url, :body => body, :headers => headers).response
-          configuration.http_client.request(http_method.to_sym, url, body, headers)
+          configuration.http_client.request(http_method.to_sym, url, :body => body, :header => headers)
         else
           puts "SHOULD NOT BE HERE"
 =begin
