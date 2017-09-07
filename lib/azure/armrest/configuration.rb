@@ -83,8 +83,6 @@ module Azure
           raise ArgumentError, msg
         end
 
-        @oauth2 = nil
-
         Faraday.default_adapter = options[:adapter]
 
         # Avoid thread safety issues for VCR testing.
@@ -124,7 +122,6 @@ module Azure
         end
 
         @log.formatter = formatter
-        @oauth2.connection.response(:detailed_logger, @log) if @oauth2
 
         @log
       end
@@ -255,7 +252,7 @@ module Azure
         token_url = File.join(tenant_id, 'oauth2', 'token')
         auth_url  = File.join(site_url, token_url)
 
-        @oauth2 = OAuth2::Client.new(
+        oauth2 = OAuth2::Client.new(
           client_id,
           client_key,
           :site            => site_url,
@@ -265,9 +262,9 @@ module Azure
           :connection_opts => connection_options
         )
 
-        @oauth2.connection.response(:detailed_logger, log) if log
+        oauth2.connection.response(:detailed_logger, log) if log
 
-        @oauth2.client_credentials.get_token(:resource => environment.resource_manager_url)
+        oauth2.client_credentials.get_token(:resource => environment.resource_manager_url)
       end
     end
   end

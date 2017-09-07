@@ -25,6 +25,7 @@ module Azure
 
           connection = Faraday.new(url, options) do |f|
             f.response :detailed_logger, configuration.log if configuration.log
+            f.adapter Faraday.default_adapter
           end
 
           response = connection.send(http_method) do |req|
