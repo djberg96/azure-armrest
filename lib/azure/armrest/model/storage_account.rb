@@ -553,11 +553,10 @@ module Azure
         raise ArgumentError, "No access key specified" unless key
 
         array = []
-        mutex = Mutex.new
 
-        Parallel.each(containers(key), :in_threads => max_threads) do |container|
+        containers(key).each do |container|
           begin
-            mutex.synchronize { array.concat(blobs(container.name, key, options)) }
+            array.concat(blobs(container.name, key, options))
           rescue Errno::ECONNREFUSED, Azure::Armrest::TimeoutException => err
             msg "Unable to gather blob information for #{container.name}: #{err}"
             log('warn', msg)

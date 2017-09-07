@@ -265,9 +265,8 @@ module Azure
       #
       def get_private_images(storage_accounts)
         results = []
-        mutex = Mutex.new
 
-        Parallel.each(storage_accounts, :in_threads => configuration.max_threads) do |storage_account|
+        storage_accounts.each do |storage_account|
           begin
             key = get_account_key(storage_account)
           rescue Azure::Armrest::ApiException
@@ -290,9 +289,7 @@ module Azure
             next unless blob_properties.respond_to?(:x_ms_meta_microsoftazurecompute_osstate)
             next unless blob_properties.x_ms_meta_microsoftazurecompute_osstate.casecmp('generalized') == 0
 
-            mutex.synchronize do
-              results << blob_to_private_image_object(storage_account, blob, blob_properties)
-            end
+            results << blob_to_private_image_object(storage_account, blob, blob_properties)
           end
         end
 
