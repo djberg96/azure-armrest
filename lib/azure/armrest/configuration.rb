@@ -120,6 +120,8 @@ module Azure
           raise ArgumentError, "client_id, client_key, and tenant_id must all be specified"
         end
 
+        @http_client = HTTPClient.new
+
         # Then set the remaining options automatically
         options.each { |key, value| send("#{key}=", value) }
 
@@ -214,6 +216,10 @@ module Azure
 
       private
 
+      def http_client
+        @http_client
+      end
+
       # Validate the subscription ID for the given credentials. Returns the
       # subscription ID if valid.
       #
@@ -281,28 +287,23 @@ module Azure
       end
 
       def fetch_token
-        token_url = File.join(environment.authority_url, tenant_id, 'oauth2', 'token')
+        site_url  = environment.active_directory_authority
+        token_url = File.join(tenant_id, 'oauth2', 'token')
+        auth_url  = File.join(site_url, token_url)
 
-        response = JSON.parse(
-          ArmrestService.send(
-            :rest_post,
-            :url         => token_url,
-            :proxy       => proxy,
-            :ssl_version => ssl_version,
-            :ssl_verify  => ssl_verify,
-            :payload     => {
-              :grant_type    => grant_type,
-              :client_id     => client_id,
-              :client_secret => client_key,
-              :resource      => environment.resource_url
-            }
-          )
-        )
+        body = {
+          :grant_type    => 'client_credentials',
+          :client_id     => client_id,
+          :client_secret => client_key,
+          :resource      => environment.resource_manager_url
+        }
 
-        @token = 'Bearer ' + response['access_token']
-        @token_expiration = Time.now.utc + response['expires_in'].to_i
+        response = http_client.post(auth_url, body)
 
-        self.class.cache_token(self)
+        @token = JSON.parse(response.body)['access_token']
+        http_client.default_header = {'Authorization' => "Bearer #{@token}"}
+
+        @token
       end
     end
   end

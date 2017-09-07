@@ -1,4 +1,4 @@
-require 'rest-client'
+require 'httpclient'
 require 'json'
 require 'thread'
 require 'addressable'
