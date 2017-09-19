@@ -58,10 +58,11 @@ module Azure::Armrest::Storage::ManagedStorageHelper
     }
 
     # This call will give us an operations URL in the headers.
-    initial_url = build_url(resource_group, disk_name, 'BeginGetAccess')
-    response    = rest_post(initial_url, post_options.to_json)
+    begin_get_access_url = build_url(resource_group, disk_name, 'BeginGetAccess')
+    begin_get_access_response = rest_post(begin_get_access_url, post_options.to_json)
+
     begin
-      headers = Azure::Armrest::ResponseHeaders.new(response.headers)
+      headers = Azure::Armrest::ResponseHeaders.new(begin_get_access_response.headers)
 
       # Using the URL returned from the above call, make another call that
       # will return the URL + SAS token.
@@ -69,16 +70,33 @@ module Azure::Armrest::Storage::ManagedStorageHelper
 
       unless op_url
         msg = "Unable to find an operations URL for #{disk_name}/#{resource_group}"
-        raise Azure::Armrest::NotFoundException.new(response.code, msg, response.body)
+        log('debug', "#{msg}: #{begin_get_access_response.headers}")
+        raise Azure::Armrest::NotFoundException.new(begin_get_access_response.code, msg, begin_get_access_response.body)
       end
 
       # Dig the URL + SAS token URL out of the response
       response = rest_get(op_url)
-      body     = Azure::Armrest::ResponseBody.new(response.body)
-      sas_url  = body.try(:properties).try(:output).try(:access_sas)
+      body = Azure::Armrest::ResponseBody.new(response.body)
+
+      tries = 0
+      max_retries = 20
+
+      # We can't get the token URL while an operation is InProgress on the storage.
+      while body.status.casecmp('inprogress').zero?
+        tries += 1
+        break if tries > max_retries
+        log('debug', "Unable to get SAS URL, operation in progress, retry [#{tries}].")
+        sleep_time = response.headers[:retry_after] || 5
+        sleep(sleep_time)
+        response = rest_get(op_url)
+        body = Azure::Armrest::ResponseBody.new(response.body)
+      end
+
+      sas_url = body.try(:properties).try(:output).try(:access_sas)
 
       unless sas_url
         msg = "Unable to find an SAS URL for #{disk_name}/#{resource_group}"
+        log('error', "#{msg}: #{response.body}")
         raise Azure::Armrest::NotFoundException.new(response.code, msg, response.body)
       end
 
@@ -100,6 +118,7 @@ module Azure::Armrest::Storage::ManagedStorageHelper
       # but without encoding the URL or passing our configuration token.
       max_retries = 5
       retries     = 0
+
       begin
         RestClient::Request.execute(
           :method      => :get,
@@ -116,8 +135,10 @@ module Azure::Armrest::Storage::ManagedStorageHelper
         retry
       end
     ensure
-      end_url = build_url(resource_group, disk_name, 'EndGetAccess')
-      rest_post(end_url)
+      if begin_get_access_response
+        end_url = build_url(resource_group, disk_name, 'EndGetAccess')
+        rest_post(end_url)
+      end
     end
   end
 end

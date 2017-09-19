@@ -56,7 +56,7 @@ describe "Storage::SnapshotService" do
 
     it "will raise an error if :entire_image is not specified and no range is specified" do
       headers = Azure::Armrest::ResponseHeaders.new(:headers => {:azure_asyncoperation => "https://www.foo.bar"})
-      body    = Azure::Armrest::ResponseBody.new(:body => {:properties => {:output => {:access_sas => 'xyz'}}})
+      body    = Azure::Armrest::ResponseBody.new(:status => "Succeeded", :body => {:status => "Succeeded", :properties => {:output => {:access_sas => 'xyz'}}})
 
       allow(snapshot).to receive(:rest_post).and_return(headers)
       allow(snapshot).to receive(:rest_get).and_return(body)
