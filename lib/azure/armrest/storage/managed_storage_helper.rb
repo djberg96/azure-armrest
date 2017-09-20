@@ -63,42 +63,22 @@ module Azure::Armrest::Storage::ManagedStorageHelper
 
     begin
       headers = Azure::Armrest::ResponseHeaders.new(begin_get_access_response.headers)
+      status = wait(headers, 120, 5)
 
-      # Using the URL returned from the above call, make another call that
-      # will return the URL + SAS token.
-      op_url = headers.try(:azure_asyncoperation) || headers.location
-
-      unless op_url
-        msg = "Unable to find an operations URL for #{disk_name}/#{resource_group}"
+      unless status.casecmp?('succeeded')
+        msg = "Unable to obtain an operations URL for #{disk_name}/#{resource_group}"
         log('debug', "#{msg}: #{begin_get_access_response.headers}")
         raise Azure::Armrest::NotFoundException.new(begin_get_access_response.code, msg, begin_get_access_response.body)
       end
 
+      # Get the SAS URL from the BeginGetAccess call
+      op_url = headers.try(:azure_asyncoperation) || headers.location
+
       # Dig the URL + SAS token URL out of the response
       response = rest_get(op_url)
+
       body = Azure::Armrest::ResponseBody.new(response.body)
-
-      tries = 0
-      max_retries = 20
-
-      # We can't get the token URL while an operation is InProgress on the storage.
-      while body.status.casecmp('inprogress').zero?
-        tries += 1
-        break if tries > max_retries
-        log('debug', "Unable to get SAS URL, operation in progress, retry [#{tries}].")
-        sleep_time = response.headers[:retry_after] || 5
-        sleep(sleep_time)
-        response = rest_get(op_url)
-        body = Azure::Armrest::ResponseBody.new(response.body)
-      end
-
-      sas_url = body.try(:properties).try(:output).try(:access_sas)
-
-      unless sas_url
-        msg = "Unable to find an SAS URL for #{disk_name}/#{resource_group}"
-        log('error', "#{msg}: #{response.body}")
-        raise Azure::Armrest::NotFoundException.new(response.code, msg, response.body)
-      end
+      sas_url = body.properties.output.access_sas
 
       # The same restrictions that apply to the StorageAccont method also apply here.
       range = options[:range] if options[:range]

@@ -189,8 +189,8 @@ module Azure
       # For most resources the +max_time+ argument should be more than sufficient.
       # Certain resources, such as virtual machines, could take longer.
       #
-      def wait(response, max_time = 60)
-        sleep_time = response.respond_to?(:retry_after) ? response.retry_after.to_i : 10
+      def wait(response, max_time = 60, default_interval = 10)
+        sleep_time = response.respond_to?(:retry_after) ? response.retry_after.to_i : default_interval
         total_time = 0
 
         until (status = poll(response)) =~ /^succe/i # success or succeeded
