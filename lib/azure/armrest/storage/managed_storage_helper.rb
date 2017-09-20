@@ -65,7 +65,7 @@ module Azure::Armrest::Storage::ManagedStorageHelper
       headers = Azure::Armrest::ResponseHeaders.new(begin_get_access_response.headers)
       status = wait(headers, 120, 5)
 
-      unless status.casecmp?('succeeded')
+      unless status.casecmp('succeeded').zero?
         msg = "Unable to obtain an operations URL for #{disk_name}/#{resource_group}"
         log('debug', "#{msg}: #{begin_get_access_response.headers}")
         raise Azure::Armrest::NotFoundException.new(begin_get_access_response.code, msg, begin_get_access_response.body)
