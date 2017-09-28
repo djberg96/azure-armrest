@@ -371,6 +371,20 @@ module Azure
         results
       end
 
+      def get_all_results_as_hash(response)
+        json = JSON.parse(response)
+
+        hash = {:body => json['value']}
+
+        while json['nextLink']
+          response = rest_get_without_encoding(json['nextLink'])
+          json = JSON.parse(response)
+          hash[:body].concat(json['value'])
+        end
+
+        hash.merge(:headers => response.headers, :code => response.code)
+      end
+
       def model_class
         @model_class ||= Object.const_get(self.class.to_s.sub(/Service$/, ''))
       end

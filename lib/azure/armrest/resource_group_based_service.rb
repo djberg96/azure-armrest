@@ -82,6 +82,24 @@ module Azure
         get_all_results(response)
       end
 
+      def list_as_hash(resource_group = configuration.resource_group)
+        validate_resource_group(resource_group)
+
+        url = build_url(resource_group)
+        url = yield(url) || url if block_given?
+        response = rest_get(url)
+
+        get_all_results_as_hash(response)
+      end
+
+      def list_all_as_hash(filter = {})
+        url = build_url
+        url = yield(url) || url if block_given?
+        response = rest_get(url)
+
+        get_all_results_as_hash(response)
+      end
+
       # Use a single call to get all resources for the service. You may
       # optionally provide a filter on various properties to limit the
       # result set.
@@ -152,19 +170,23 @@ module Azure
       # Get information about a single resource +name+ within resource group
       # +rgroup+, or the resource group that was set in the configuration.
       #
-      def get(name, rgroup = configuration.resource_group)
-        validate_resource_group(rgroup)
+      def get(name, resource_group = configuration.resource_group)
+        hash = get_as_hash(name, resource_group)
+
+        model_class.new(hash[:body]).tap do |obj|
+          obj.response_headers = Azure::Armrest::ResponseHeaders.new(hash[:headers])
+          obj.response_code = hash[:code]
+        end
+      end
+
+      def get_as_hash(name, resource_group = configuration.resource_group)
+        validate_resource_group(resource_group)
         validate_resource(name)
 
-        url = build_url(rgroup, name)
+        url = build_url(resource_group, name)
         url = yield(url) || url if block_given?
         response = rest_get(url)
-
-        obj = model_class.new(response.body)
-        obj.response_headers = Azure::Armrest::ResponseHeaders.new(response.headers)
-        obj.response_code = response.code
-
-        obj
+        {:body => JSON.parse(response.body)}.merge(:headers => response.headers, :code => response.code)
       end
 
       # Delete the resource with the given +name+ for the provided +resource_group+,
