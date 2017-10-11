@@ -630,9 +630,9 @@ module Azure
         response = blob_response(key, "restype=service&comp=properties")
         toplevel = 'StorageServiceProperties'
 
-        doc = Oga.parse_xml(response.body).xpath("//#{toplevel}")
-        xml = doc.to_a.map(&:to_xml).first
-        BlobServiceProperty.new(Hash.from_xml(xml)[toplevel])
+        element = Ox.parse(response.body).StorageServiceProperties
+        hash = Hash.from_xml(Ox.to_xml(element))
+        BlobServiceProperty.new(hash['StorageServiceProperties'])
       end
 
       # Return metadata for the given +blob+ within +container+. You may
