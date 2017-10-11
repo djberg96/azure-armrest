@@ -91,7 +91,7 @@ describe "StorageAccount" do
             </File>
           </Entries>
           <NextMarker />
-        </EnumerationResults>"
+        </EnumerationResults>
       }
 
       query = "comp=list&restype=directory"
