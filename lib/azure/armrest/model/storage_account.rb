@@ -1,6 +1,7 @@
 require 'azure-signature'
 require 'active_support/core_ext/hash/conversions'
 require 'oga'
+require 'ox'
 
 module Azure
   module Armrest
@@ -202,16 +203,13 @@ module Azure
 
         response = file_response(key, query, 'get', nil, share)
 
-        doc = Oga.parse_xml(response.body)
+        doc = Ox.parse(response.body)
         results = []
 
-        doc.xpath('//EnumerationResults/Entries').each do |element|
-          element.xpath('//Directory').each do |dir|
-            results << ShareDirectory.new(Hash.from_xml(dir.to_xml)['Directory'])
-          end
-          element.xpath('//File').each do |file|
-            results << ShareFile.new(Hash.from_xml(file.to_xml)['File'])
-          end
+        doc.EnumerationResults.Entries.each do |element|
+          hash = Hash.from_xml(Ox.to_xml(element))
+          results << ShareDirectory.new(hash['Directory']) if hash['Directory']
+          results << ShareFile.new(hash['File']) if hash['File']
         end
 
         results.concat(next_marker_results(doc, :files, key, options))
@@ -1053,12 +1051,13 @@ module Azure
       # followed by any arguments to pass to that method.
       #
       def next_marker_results(doc, method_name, *args)
-        xmarker = doc.xpath('//NextMarker').first # There is only one
-        if xmarker.children.empty?
+        xmarker = doc.EnumerationResults.NextMarker.text
+
+        if xmarker.nil?
           return []
         else
           args = args.dup # Avoid modifying original argument
-          args.last[:marker] = xmarker.children.first.to_s
+          args.last[:marker] = xmarker
           return send(method_name, *args)
         end
       end
