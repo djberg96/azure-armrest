@@ -440,10 +440,12 @@ module Azure
 
         response = blob_response(key, query)
 
-        doc = Oga.parse_xml(response.body)
+        doc = Ox.parse(response.body)
+        results = []
 
-        results = doc.xpath('//Containers/Container').collect do |element|
-          Container.new(Hash.from_xml(element.to_xml)['Container'], skip_defs)
+        doc.EnumerationResults.Containers.each do |container|
+          hash = Hash.from_xml(Ox.to_xml(container))
+          results << Container.new(hash['Container'], skip_defs)
         end
 
         results.concat(next_marker_results(doc, :containers, key, options))
