@@ -583,11 +583,14 @@ module Azure
 
         response = blob_response(key, query, container)
 
-        doc = Oga.parse_xml(response.body)
+        doc = Ox.parse(response.body)
+        results = []
 
-        results = doc.xpath('//Blobs/Blob').collect do |node|
-          hash = Hash.from_xml(node.to_xml)['Blob'].merge(:container => container)
-          hash.key?('Snapshot') ? BlobSnapshot.new(hash, skip_defs) : Blob.new(hash, skip_defs)
+        doc.EnumerationResults.Blobs.each do |blob|
+          hash = Hash.from_xml(Ox.to_xml(blob))['Blob']
+          hash[:container] = container
+          object = hash.key?('Snapshot') ? BlobSnapshot.new(hash, skip_defs) : Blob.new(hash, skip_defs)
+          results << object
         end
 
         results.concat(next_marker_results(doc, :blobs, container, key, options))
