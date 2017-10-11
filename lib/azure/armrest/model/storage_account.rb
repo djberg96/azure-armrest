@@ -1,6 +1,5 @@
 require 'azure-signature'
 require 'active_support/core_ext/hash/conversions'
-require 'oga'
 require 'ox'
 
 module Azure
@@ -628,7 +627,6 @@ module Azure
         raise ArgumentError, "No access key specified" unless key
 
         response = blob_response(key, "restype=service&comp=properties")
-        toplevel = 'StorageServiceProperties'
 
         element = Ox.parse(response.body).StorageServiceProperties
         hash = Hash.from_xml(Ox.to_xml(element))
@@ -657,11 +655,10 @@ module Azure
         raise ArgumentError, "No access key specified" unless key
 
         response = blob_response(key, "restype=service&comp=stats")
-        toplevel = 'StorageServiceStats'
 
-        doc = Oga.parse_xml(response.body).xpath("//#{toplevel}")
-        xml = doc.to_a.map(&:to_xml).first
-        BlobServiceStat.new(Hash.from_xml(xml)[toplevel])
+        element = Ox.parse(response.body).StorageServiceStats
+        hash = Hash.from_xml(Ox.to_xml(element))
+        BlobServiceStat.new(hash['StorageServiceStats'])
       end
 
       # Copy the blob from the source container/blob to the destination container/blob.
