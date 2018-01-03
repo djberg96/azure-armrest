@@ -271,6 +271,7 @@ module Azure
     class ResourceProvider < BaseModel; end
     class Sku < BaseModel; end
     class KeyVault < BaseModel; end
+    class Consumption < BaseModel; end
 
     module Billing
       class Usage < BaseModel; end
