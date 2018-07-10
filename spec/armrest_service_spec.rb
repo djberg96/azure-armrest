@@ -69,6 +69,10 @@ describe Azure::Armrest::ArmrestService do
     it "defines a wait method" do
       expect(subject).to respond_to(:wait)
     end
+
+    it "defines a valid_api_versions method" do
+      expect(subject).to respond_to(:valid_api_versions)
+    end
   end
 
   context "poll and wait" do

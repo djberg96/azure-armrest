@@ -151,6 +151,15 @@ module Azure
         JSON.parse(resp.body)["value"].map{ |hash| Azure::Armrest::Tag.new(hash) }
       end
 
+      # Return an array of valid api-version strings that can be used by the Service.
+      #
+      def valid_api_versions
+        list_providers
+        .find{ |lprovider| lprovider.namespace.casecmp(provider) == 0 }
+        .resource_types.find{ |rt| rt.resource_type.casecmp(service_name) == 0 }
+        .api_versions
+      end
+
       # Returns a list of tenants that can be accessed.
       #
       def tenants
