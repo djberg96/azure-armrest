@@ -16,6 +16,12 @@ describe Azure::Armrest::SubscriptionService do
     end
   end
 
+  context "api-version" do
+    it "defaults to the expected date" do
+      expect(subject.api_version).to eql('2018-08-01')
+    end
+  end
+
   context "instance methods" do
     it "defines a get method" do
       expect(subject).to respond_to(:get)
