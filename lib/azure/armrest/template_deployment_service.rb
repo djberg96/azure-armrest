@@ -72,6 +72,16 @@ module Azure
         false
       end
 
+      def valid?(deploy_name, resource_group = configuration.resource_group, content = "")
+        validate_resource_group(resource_group)
+        validate_resource(deploy_name)
+        url = build_url(resource_group, deploy_name, 'validate')
+
+        content = content.to_json if content.respond_to?(:to_json)
+
+        rest_post(url, content)
+      end
+
       private
 
       # Don't transform templates or parameters for deployments.
