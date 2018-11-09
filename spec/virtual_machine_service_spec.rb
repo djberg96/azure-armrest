@@ -112,8 +112,8 @@ describe "VirtualMachineService" do
   end
 
   context "operations" do
-    let(:response) { double(:response, :code => 202, :headers => response_headers, :body => '') }
     let(:response_headers) { IO.read('spec/fixtures/operations_response.json') }
+    let(:response) { double(:response, :code => 202, :headers => response_headers) }
 
     before { allow(vms).to receive(:rest_post).and_return(response) }
 
