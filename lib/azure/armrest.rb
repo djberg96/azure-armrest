@@ -62,6 +62,8 @@ require 'azure/armrest/billing/usage_service'
 require 'azure/armrest/key_vault_service'
 require 'azure/armrest/hdinsight/cluster_service'
 require 'azure/armrest/hdinsight/application_service'
+require 'azure/armrest/host_group_service'
+require 'azure/armrest/host_service'
 
 # JSON wrapper classes. The service classes should require their own
 # wrappers from this point on.

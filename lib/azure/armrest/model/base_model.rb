@@ -262,6 +262,8 @@ module Azure
     class Endpoint < BaseModel; end
     class Event < BaseModel; end
     class ExtensionType < BaseModel; end
+    class Host < BaseModel; end
+    class HostGroup < BaseModel; end
     class ImageVersion < BaseModel; end
     class Location < BaseModel; end
     class Offer < BaseModel; end
