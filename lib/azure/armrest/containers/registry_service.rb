@@ -36,7 +36,12 @@ module Azure
         def import_image(registry_name, resource_group, options)
         end
 
+        # List the credentials for the given +registry_name+ and +resource_group+.
+        #
         def list_credentials(registry_name, resource_group)
+          url = build_url(resource_group, registry_name, 'listCredentials')
+          response = rest_post(url)
+          Azure::Armrest::Containers::RegistryCredentials.new(response)
         end
 
         def list_usages(registry_name, resource_group)

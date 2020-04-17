@@ -350,6 +350,7 @@ module Azure
 
     module Containers
       class Registry < BaseModel; end
+      class RegistryCredentials < BaseModel; end
     end
   end
 end
