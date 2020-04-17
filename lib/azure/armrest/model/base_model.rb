@@ -347,6 +347,10 @@ module Azure
       class Image < BaseModel; end
       class Snapshot < BaseModel; end
     end
+
+    module Containers
+      class Registry < BaseModel; end
+    end
   end
 end
 
